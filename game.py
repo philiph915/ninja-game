@@ -44,15 +44,15 @@ class Game:
 
             self.display.blit(self.assets['background'],(0,0))
 
-            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 8
-            self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 8
+            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 1
+            self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 1
             render_scroll = (int(self.scroll[0]),int(self.scroll[1])) # integer version of scroll position
 
             self.clouds.update() # move the clouds
             self.clouds.render(self.display, offset = render_scroll) # render the clouds
 
             self.tilemap.render(self.display, offset = render_scroll) # this renders every single tile from the tilemap
-            
+
             self.player.update(self.tilemap, (2*(self.movement[1] - self.movement[0]),0))
             self.player.render(self.display, offset = render_scroll)
             

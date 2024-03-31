@@ -8,7 +8,7 @@ class Tilemap:
         self.game = game
         self.tile_size = tile_size
         self.tilemap = {} # this is a dictionary to map each tile to a location
-        self.offgrid_tiles = {}
+        self.offgrid_tiles = [] # this is a list of all decorations to be placed off the tile grid
 
 
         # ============ Tilemap Data ===================#
@@ -26,21 +26,15 @@ class Tilemap:
             self.tilemap['10;' + str(5+i)] = {'type': 'stone', 'variant': 1, 'pos': (10,5+i)}
 
         # generate decorations data (note that position refers to the top-left of each image!)
-        self.offgrid_tiles['100;100'] = {'type': 'large_decor', 'variant': 2, 'pos': (100,100)} # add a tree at (100,100) in pixel coordinates
-        self.offgrid_tiles['200;130'] = {'type': 'large_decor', 'variant': 0, 'pos': (200,130)} # add a rock at (200,200) in pixel coordinates
+        self.offgrid_tiles.append({'type': 'large_decor', 'variant': 2, 'pos': (100,100)}) # add a tree at (100,100) in pixel coordinates
+        self.offgrid_tiles.append({'type': 'large_decor', 'variant': 0, 'pos': (200,130)}) # add a rock at (200,200) in pixel coordinates
 
     def render(self,surf, offset = (0,0)):
 
         # Render decorations first!
-        # identify and loop through off-grid tiles inside the camera view
-        for x in range(offset[0] - self.tile_size, (offset[0] + surf.get_width()) + self.tile_size):
-            for y in range(offset[1] - self.tile_size, (offset[1] + surf.get_height()) + self.tile_size):
-                tile_loc =  str(x) + ';' + str(y)
-                if tile_loc in self.offgrid_tiles:
-                    tile = self.offgrid_tiles[tile_loc] 
-                    # render this tile if it is in the camera view 
-                    surf.blit(self.game.assets[tile['type']][tile['variant']],(tile['pos'][0] - offset[0],\
-                        tile['pos'][1] - offset[1])) # position is in pixels for off-grid graphics
+        for tile in self.offgrid_tiles: # this will render all decoration items, even if they are not inside the camera view
+            surf.blit(self.game.assets[tile['type']][tile['variant']],(tile['pos'][0] - offset[0],\
+                tile['pos'][1] - offset[1])) # position is in pixels for off-grid graphics
     
         # identify and loop through tilemap tiles inside the camera view
         for x in range(offset[0] // self.tile_size - 1, (offset[0] + surf.get_width()) // self.tile_size + 1):

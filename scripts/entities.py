@@ -57,5 +57,5 @@ class PhysicsEntity:
             self.velocity[0] = 0 # set x-velocity = 0 after collision occurs
 
 
-    def render(self,surf):
-        surf.blit(self.game.assets['player'],(self.pos))
+    def render(self,surf,offset):
+        surf.blit(self.game.assets['player'],(self.pos[0]-offset[0],self.pos[1]-offset[1]))

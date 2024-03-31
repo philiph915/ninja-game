@@ -27,7 +27,7 @@ class Tilemap:
 
         # generate decorations data (note that position refers to the top-left of each image!)
         self.offgrid_tiles.append({'type': 'large_decor', 'variant': 2, 'pos': (100,100)}) # add a tree at (100,100) in pixel coordinates
-        self.offgrid_tiles.append({'type': 'large_decor', 'variant': 0, 'pos': (200,130)}) # add a rock at (200,200) in pixel coordinates
+        self.offgrid_tiles.append({'type': 'large_decor', 'variant': 0, 'pos': (200,130)}) # add a rock at (200,130) in pixel coordinates
 
     def render(self,surf, offset = (0,0)):
 

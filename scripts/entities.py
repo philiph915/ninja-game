@@ -1,7 +1,7 @@
 import pygame
 
 GRAVITY = 0.4
-TERMINAL_VELOCITY = 8
+TERMINAL_VELOCITY = 12
 
 class PhysicsEntity:
     def __init__(self, game, e_type, pos, size): # pass the entire game into this to give access to the entire game

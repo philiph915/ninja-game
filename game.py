@@ -51,7 +51,7 @@ class Game:
             self.clouds.update() # move the clouds
             self.clouds.render(self.display, offset = render_scroll) # render the clouds
 
-            self.tilemap.render(self.display, offset = render_scroll) # this renders every single tile from the tilemap
+            self.tilemap.render(self.display, offset = render_scroll) # render tilemap objects
 
             self.player.update(self.tilemap, (2*(self.movement[1] - self.movement[0]),0))
             self.player.render(self.display, offset = render_scroll)

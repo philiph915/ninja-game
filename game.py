@@ -51,9 +51,10 @@ class Game:
             self.clouds.update() # move the clouds
             self.clouds.render(self.display, offset = render_scroll) # render the clouds
 
+            self.tilemap.render(self.display, offset = render_scroll) # this renders every single tile from the tilemap
+            
             self.player.update(self.tilemap, (2*(self.movement[1] - self.movement[0]),0))
             self.player.render(self.display, offset = render_scroll)
-            self.tilemap.render(self.display, offset = render_scroll)
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:

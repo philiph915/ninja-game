@@ -1,9 +1,10 @@
 import sys
 import pygame
-from scripts.entities import PhysicsEntity # Import just the PhysicsEntity class from this script
+from scripts.entities import PhysicsEntity, Player
 from scripts.utils import load_image, load_images
 from scripts.tilemap import Tilemap
 from scripts.clouds import Cloud, Clouds
+from scripts.utils import Animation
 
 class Game:
     def __init__(self):
@@ -26,12 +27,17 @@ class Game:
             'stone': load_images('tiles/stone'),
             'player': load_image('entities/player.png'),
             'background': load_image('background.png'),
-            'clouds': load_images('clouds')
+            'clouds': load_images('clouds'),
+            'player/idle': Animation(load_images('entities/player/idle'),img_dur = 6),
+            'player/run': Animation(load_images('entities/player/run'),img_dur = 4),
+            'player/jump': Animation(load_images('entities/player/jump')),
+            'player/slide': Animation(load_images('entities/player/slide')),
+            'player/wall_slide': Animation(load_images('entities/player/wall_slide'))
         }
 
         self.movement = [False,False]
 
-        self.player = PhysicsEntity(self,'player',(50,50),(8,15))
+        self.player = Player(self,(50,50),(8,15))
 
         self.tilemap = Tilemap(self, 16)
 
@@ -68,9 +74,10 @@ class Game:
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         self.movement[1] = True
 
-                    # Handle Jumping
-                    if event.key == pygame.K_UP or event.key == pygame.K_w:
+                    # Handle Jumping (Allows multiple jumps)
+                    if event.key == pygame.K_UP or event.key == pygame.K_w and self.player.jumps > 0:
                         self.player.velocity[1] = -8
+                        self.player.jumps -= 1 # take away one of the player's available jumps
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:

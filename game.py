@@ -75,9 +75,10 @@ class Game:
                         self.movement[1] = True
 
                     # Handle Jumping (Allows multiple jumps)
-                    if event.key == pygame.K_UP or event.key == pygame.K_w and self.player.jumps > 0:
+                    if (event.key == pygame.K_UP or event.key == pygame.K_w) and self.player.jumps > 0:
                         self.player.velocity[1] = -8
                         self.player.jumps -= 1 # take away one of the player's available jumps
+                        print(self.player.jumps)
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:

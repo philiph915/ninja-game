@@ -172,10 +172,12 @@ class Editor:
                     # Toggle on/off grid
                     if event.key == pygame.K_g:
                         self.ongrid = not self.ongrid 
-                    
                     # File I/O
                     if event.key == pygame.K_o: # output
                         self.tilemap.save('map.json')
+                    # Auto-tiling
+                    if event.key == pygame.K_t: 
+                        self.tilemap.autotile()
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:

@@ -3,6 +3,23 @@ import json
 
 NEIGHBOR_OFFSETS = [(-1,0),(-1,-1),(0,-1),(1,-1),(1,0),(0,0),(1,1),(0,1),(-1,1)] # get all the tiles in these grid positions relative to the player
 PHYSICS_TILES = {'grass','stone'} # this is a set; it is faster to check if a value is in a set rather than if a value is in a list
+AUTOTILE_TYPES = {'grass','stone'} # which tile types can be autotiled
+
+# Define rules for auto-tiling
+AUTOTILE_MAP = {
+    # Each dictionary key is a sorted list containing tile neighbors to check for, converted to a tuple
+    # because dictionaries cannot have lists as keys
+    # Each dictionary entry is the tile variant to use to if the neighbors in the key are populated
+    tuple(sorted([(1, 0,), (0, 1)])):                   0, # tiles on the right and below 
+    tuple(sorted([(1, 0,), (-1, 0), (0, 1)])):          1, # tiles on left, right, and below
+    tuple(sorted([(-1, 0,), (0, 1)])):                  2, # tiles left and below
+    tuple(sorted([(-1, 0,), (0, -1), (0, 1)])):         3, # tiles left, above, below
+    tuple(sorted([(-1, 0,), (0, -1)])):                 4, # tiles left and above
+    tuple(sorted([(-1, 0,), (1, 0), (0, -1)])):         5, # tiles left, right, and above
+    tuple(sorted([(1, 0,), (0, -1)])):                  6, # tiles right and above
+    tuple(sorted([(1, 0,), (0, 1), (0, -1)])):          7, # tiles above, below, and right
+    tuple(sorted([(-1, 0,), (1, 0), (0, -1), (0, 1)])):  8, # tiles on left, right, above, and below
+}
 
 class Tilemap:
     def __init__(self, game, tile_size = 16): # 16 is the default tile size
@@ -84,4 +101,25 @@ class Tilemap:
         self.tilemap = map_data['tilemap']
         self.tile_size = map_data['tile_size']
         self.offgrid_tiles = map_data['offgrid']
+
+    # Auto-tiling 
+    def autotile(self):
+        # loop through all the keys in the tilemap dictionary
+        for loc in self.tilemap:
+            tile = self.tilemap[loc]
+            neighbors = set()
+            for shift in [(1,0),(-1,0),(0,-1),(0,1)]:
+                # build a string representation of the location we want to check
+                check_loc = str(tile['pos'][0] + shift[0]) + ';' + str(tile['pos'][1] + shift[1])
+                # Check if something exists in the checked location
+                if check_loc in self.tilemap:
+                    # if yes, make sure the neighbor is the same type of tile
+                    if self.tilemap[check_loc]['type'] == tile['type']:
+                        neighbors.add(shift) # add this location to the set of populated neighbors
+
+            # Convert neighbors set into a tuple for compatability with the autotile rule dictionary
+            neighbors = tuple(sorted(neighbors))
+            if (tile['type'] in AUTOTILE_TYPES) and (neighbors in AUTOTILE_MAP):
+                # set this tile's variant to the entry in the rule dictionary
+                tile['variant'] = AUTOTILE_MAP[neighbors] 
 

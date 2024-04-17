@@ -41,9 +41,15 @@ class Game:
 
         self.tilemap = Tilemap(self, 16)
 
+        # Load a level
+        self.tilemap.load('map.json')
+
         self.scroll = [0,0] # create a list representing the camera position
 
         self.clouds = Clouds(self.assets['clouds'], count=8)
+
+        id_pairs =[('large_decor',2)]
+        print(self.tilemap.extract(id_pairs, keep=False))
 
     def run(self): # This is the game loop
         while True:
@@ -78,7 +84,7 @@ class Game:
                     if (event.key == pygame.K_UP or event.key == pygame.K_w) and self.player.jumps > 0:
                         self.player.velocity[1] = -8
                         self.player.jumps -= 1 # take away one of the player's available jumps
-                        print(self.player.jumps)
+                        # print(self.player.jumps)
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:

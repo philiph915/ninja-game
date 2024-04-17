@@ -64,6 +64,41 @@ class Tilemap:
                     surf.blit(self.game.assets[tile['type']][tile['variant']],\
                               (tile['pos'][0]*self.tile_size - offset[0], tile['pos'][1]*self.tile_size - offset[1]))
 
+    def extract(self, id_pairs, keep = False):
+
+        # id_pairs is a list of tuples of the form ('type',int variant) where 'type' is the type of tile
+
+        # return tiles in id_pairs, optionally remove them from the map
+        matches = [] # initialize empty list of matches w/ id pairs
+        
+        # Loop through off-grid tiles
+        for tile in self.offgrid_tiles.copy(): # work with a copy of offgrid_tiles rather than the actual parameter
+            # if the tile type and variant listed in id_pairs exists in offgrid tiles:
+            if (tile['type'],tile['variant']) in id_pairs:
+                matches.append(tile.copy()) # pass the tile information to matches list
+                # remove from offgrid tiles if specified
+                if not keep:
+                    self.offgrid_tiles.remove(tile)
+
+        # Loop through on grid tiles (by dictionary keys)
+        for loc in self.tilemap:
+            tile = self.tilemap[loc] # tilemap is a dictionary; get the entry corresponding to [loc] (this is the actual dictionary entry, not a working copy!)
+            if (tile['type'], tile['variant']) in id_pairs:
+
+                # Create a clean copy of the tile data to avoid modifying the actual data
+                # in self.tilemap
+                matches.append(tile.copy()) # pass the tile information to matches list
+                # create a copy of the matches list entry (list.copy function)
+                matches[-1]['pos'] = matches[-1]['pos'].copy() # don't really understand why we have to copy this one
+                # convert tilemap position to pixel coordinates
+                matches[-1]['pos'][0] *= self.tile_size
+                matches[-1]['pos'][1] *= self.tile_size
+
+                # remove from tilemap if specified
+                if not keep:
+                    del self.tilemap[loc] # remove from dictionary
+
+        return matches
    
     def tiles_around(self,pos): # get the neighboring tiles relative to a given position in the game world
         

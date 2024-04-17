@@ -1,4 +1,5 @@
 import pygame
+import json
 
 NEIGHBOR_OFFSETS = [(-1,0),(-1,-1),(0,-1),(1,-1),(1,0),(0,0),(1,1),(0,1),(-1,1)] # get all the tiles in these grid positions relative to the player
 PHYSICS_TILES = {'grass','stone'} # this is a set; it is faster to check if a value is in a set rather than if a value is in a list
@@ -19,15 +20,15 @@ class Tilemap:
         # {(0,0): 'grass', (0,1): 'dirt', (9999, 0): 'grass'} # save individual tile locations as specific tiles 
         # (this allows you to not have to code empty spaces into a list!)
 
-        # generate tilemap data
-        for i in range(10):
-            # results in positions 3 thru 12 on x, 10 on y being grass tiles
-            self.tilemap[str(3+i) + ';10'] = {'type': 'grass', 'variant': 1, 'pos': (3+i,10)} # keep pos as a tuple, everything else is a string
-            self.tilemap['10;' + str(5+i)] = {'type': 'stone', 'variant': 1, 'pos': (10,5+i)}
+        # Generate sample tilemap data
+        # for i in range(10):
+        #     # results in positions 3 thru 12 on x, 10 on y being grass tiles
+        #     self.tilemap[str(3+i) + ';10'] = {'type': 'grass', 'variant': 1, 'pos': (3+i,10)} # keep pos as a tuple, everything else is a string
+        #     self.tilemap['10;' + str(5+i)] = {'type': 'stone', 'variant': 1, 'pos': (10,5+i)}
 
-        # generate decorations data (note that position refers to the top-left of each image!)
-        self.offgrid_tiles.append({'type': 'large_decor', 'variant': 2, 'pos': (100,100)}) # add a tree at (100,100) in pixel coordinates
-        self.offgrid_tiles.append({'type': 'large_decor', 'variant': 0, 'pos': (200,130)}) # add a rock at (200,130) in pixel coordinates
+        # # generate decorations data (note that position refers to the top-left of each image!)
+        # self.offgrid_tiles.append({'type': 'large_decor', 'variant': 2, 'pos': (100,100)}) # add a tree at (100,100) in pixel coordinates
+        # self.offgrid_tiles.append({'type': 'large_decor', 'variant': 0, 'pos': (200,130)}) # add a rock at (200,130) in pixel coordinates
 
     def render(self,surf, offset = (0,0)):
 
@@ -65,3 +66,22 @@ class Tilemap:
             if tile['type'] in PHYSICS_TILES:
                 rects.append(pygame.Rect(tile['pos'][0]*self.tile_size, tile['pos'][1]*self.tile_size,self.tile_size,self.tile_size))
         return rects
+    
+    # Save Tilemap data
+    def save(self, path): 
+        f = open(path, 'w') # create file with write access
+        json.dump({'tilemap': self.tilemap, 'tile_size': self.tile_size, 'offgrid': self.offgrid_tiles},f)
+        f.close()
+
+    # Load Tilemap data
+    def load(self, path): 
+        # Load a saved json file
+        f = open(path, 'r')
+        map_data = json.load(f)
+        f.close()
+
+        # Parse loaded data to class parameters
+        self.tilemap = map_data['tilemap']
+        self.tile_size = map_data['tile_size']
+        self.offgrid_tiles = map_data['offgrid']
+

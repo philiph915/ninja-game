@@ -2,6 +2,7 @@ import sys
 import pygame
 from scripts.utils import load_images
 from scripts.tilemap import Tilemap
+# import json
 
 RENDER_SCALE = 2.0
 
@@ -29,6 +30,12 @@ class Editor:
         self.movement = [False,False,False,False]
 
         self.tilemap = Tilemap(self, 16)
+        
+        # Load map.json if it exists
+        try:  
+            self.tilemap.load('map.json')
+        except FileNotFoundError:
+            pass
 
         self.scroll = [0,0] # create a list representing the camera position
 
@@ -44,6 +51,7 @@ class Editor:
         self.clicking = False
         self.right_clicking = False
         self.shift = False
+        self.can_place_offgrid = True
 
     def run(self): # This is the game loop
         while True:
@@ -64,11 +72,16 @@ class Editor:
 
             # Place tiles
             if self.clicking:
-                # Add an item to the dictionary based on mouse position and current tile selection
-                self.tilemap.tilemap[str(tile_pos[0]) + ';' + str(tile_pos[1])] = {'type': self.tile_list[self.tile_group], \
-                                                                                    'variant': self.tile_variant, 'pos': tile_pos}
-                # print(self.tilemap.tilemap)
-
+                if not self.ongrid and self.can_place_offgrid:
+                    # Add an item to the list of offgrid tiles
+                    self.tilemap.offgrid_tiles.append({'type': self.tile_list[self.tile_group],'variant': self.tile_variant, \
+                                                       'pos': (mpos[0] + self.scroll[0], mpos[1] + self.scroll[1])})
+                    self.can_place_offgrid = False
+                elif self.ongrid:
+                    # Add an item to the dictionary based on mouse position and current tile selection
+                    self.tilemap.tilemap[str(tile_pos[0]) + ';' + str(tile_pos[1])] = {'type': self.tile_list[self.tile_group], \
+                                                                                        'variant': self.tile_variant, 'pos': tile_pos}
+                    # print(self.tilemap.tilemap)
             # Remove tiles
             if self.right_clicking:
                 # Get a key representation of the current mouse position in tile coordinates
@@ -76,7 +89,18 @@ class Editor:
                 # If there is a tile at the current mouse location, delete it from the dictionary
                 if tile_loc in self.tilemap.tilemap:
                     del self.tilemap.tilemap[tile_loc]
-            
+
+                # Handle removal of offgrid tiles
+                for tile in self.tilemap.offgrid_tiles.copy():
+                    # for each tile in the list of offgrid tiles, get the tile's image
+                    tile_img = self.assets[tile['type']][tile['variant']]
+                    # Get a rectangle bounding the image of the currently selected tile
+                    tile_r = pygame.Rect(tile['pos'][0] - self.scroll[0],tile['pos'][1] - self.scroll[1],\
+                                         tile_img.get_width(),tile_img.get_height())
+                    # check if the tile is colliding with the mouse
+                    if tile_r.collidepoint(mpos):
+                        # remove the current tile from the list of tiles
+                        self.tilemap.offgrid_tiles.remove(tile)
             # Show the current tile selection
             self.display.blit(current_tile_img,(5,5))
 
@@ -120,6 +144,9 @@ class Editor:
                 if event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 1:
                         self.clicking = False # Left Mouse Released
+
+                        # Reset ability to place offgrid tiles
+                        if not self.can_place_offgrid: self.can_place_offgrid = True
                     if event.button == 3:
                         self.right_clicking = False # Right Mouse Released
 
@@ -145,6 +172,10 @@ class Editor:
                     # Toggle on/off grid
                     if event.key == pygame.K_g:
                         self.ongrid = not self.ongrid 
+                    
+                    # File I/O
+                    if event.key == pygame.K_o: # output
+                        self.tilemap.save('map.json')
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:
@@ -170,6 +201,5 @@ class Editor:
             self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()),(0,0)) # Render the game graphics onto an up-scaled display
             pygame.display.update()
             self.clock.tick(60)
-
 
 Editor().run()

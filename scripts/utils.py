@@ -37,6 +37,6 @@ class Animation:
         if self.loop:
             self.frame = (self.frame + 1) % (self.img_duration * len(self.images)) # make the image loop around the number of frames in the animation
         else:
-            self.frame = min(self.frame+1, self.image_duration * len(self.images) - 1) # this needs a -1 for 0 index, above doesn't due to modulus operation
+            self.frame = min(self.frame+1, self.img_duration * len(self.images) - 1) # this needs a -1 for 0 index, above doesn't due to modulus operation
             if self.frame >= self.img_duration*len(self.images) - 1:
                 self.done = True

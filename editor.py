@@ -32,9 +32,13 @@ class Editor:
 
         self.scroll = [0,0] # create a list representing the camera position
 
+
+        # Tile creation variables
         self.tile_list = list(self.assets) # calling list() with a dictionary returns a list of the keys
         self.tile_group = 0 # which category of tile are we using
         self.tile_variant = 0  # which member of the tile category are we using
+
+        self.ongrid = True
 
         # Mouse input variables
         self.clicking = False
@@ -76,6 +80,15 @@ class Editor:
             # Show the current tile selection
             self.display.blit(current_tile_img,(5,5))
 
+            # blit the current tile selection near the mouse; 
+            
+            # if we are on-grid, the location is the tile location relative to the camera position
+            if self.ongrid:
+                self.display.blit(current_tile_img,(tile_pos[0]*self.tilemap.tile_size - self.scroll[0],\
+                                                    tile_pos[1]*self.tilemap.tile_size - self.scroll[1]))
+            else:
+                self.display.blit(current_tile_img,mpos)
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -110,13 +123,16 @@ class Editor:
                     if event.button == 3:
                         self.right_clicking = False # Right Mouse Released
 
+                # Handle Keyboard Input
+
                 # Camera Movement: This input detection logic is similar to axis() in unity
                 if event.type == pygame.KEYDOWN:
+
+                    # Horizontal Scrolling
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                         self.movement[0] = True
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         self.movement[1] = True
-
                     # Vertical Scrolling
                     if event.key == pygame.K_UP or event.key == pygame.K_w:
                         self.movement[2] = True
@@ -126,6 +142,9 @@ class Editor:
                     # Shift
                     if event.key == pygame.K_LSHIFT or event.key == pygame.K_RSHIFT:
                         self.shift = True 
+                    # Toggle on/off grid
+                    if event.key == pygame.K_g:
+                        self.ongrid = not self.ongrid 
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:

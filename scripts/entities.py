@@ -11,6 +11,7 @@ class PhysicsEntity:
         self.size = size
         self.velocity = [0, 0]
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
+        self.last_movement = [0,0]
 
         # Animation properties
         self.action = ''
@@ -68,6 +69,8 @@ class PhysicsEntity:
         if movement[0] < 0: 
             self.flip = True
 
+        self.last_movement = movement # Store the last movement input
+
         if self.collisions['down'] or self.collisions['up']:
             self.velocity[1] = 0 # set y-velocity = 0 after collision occurs
         if self.collisions['left'] or self.collisions['right']:
@@ -87,6 +90,7 @@ class Player(PhysicsEntity):
         super().__init__(game, 'player', pos, size)
         self.air_time = 0
         self.jumps = 2
+        self.wall_slide = False
 
     def update(self, tilemap, movement=(0,0)):
         super().update(tilemap, movement=movement)
@@ -98,13 +102,56 @@ class Player(PhysicsEntity):
             self.air_time = 0
             self.jumps = 2 # reset your double jump when you hit the ground
 
-        if self.air_time > 1:
-            self.set_action('jump')
-        elif movement[0] != 0 and not (self.collisions['left'] or self.collisions['right']):
-            self.set_action('run')
-        else:
-            self.set_action('idle')
+        self.wall_slide = False
+        if (self.collisions['right'] or self.collisions['left']) and self.air_time > 4:
+            self.wall_slide = True
+            self.velocity[1] = min(self.velocity[1],0.5) # Saturate the downwards velocity when in a wall-slide state
+            
+            # Show the correct animation based on which side the wall is relative to the player
+            if self.collisions['right']:
+                self.flip = False
+            else:
+                self.flip = True
+            self.set_action('wall_slide') # set the animation state
+
+        if not self.wall_slide:
+            if self.air_time > 1: 
+                self.set_action('jump')
+            elif movement[0] != 0 and not (self.collisions['left'] or self.collisions['right']):
+                self.set_action('run')
+            else:
+                self.set_action('idle')
 
         # take away your first jump once you've been in the air for a few frames
         if self.air_time > 4 and self.jumps == 2:
             self.jumps -=1
+
+        # Add air drag to reduce x-velocity from wall jumps
+        if self.velocity[0] > 0:
+            self.velocity[0] = max(self.velocity[0] - 0.5, 0) # upper bound at 0
+        elif self.velocity[0] < 0:
+            self.velocity[0] = min(self.velocity[0] + 0.5, 0) # lower bound at 0
+
+
+    def jump(self):
+        if self.wall_slide:
+            if self.flip and self.last_movement[0] < 0:
+                self.velocity[0] = 6 # push away from the wall
+                self.velocity[1] = -6 # jump vertically
+                self.air_time = 5
+                self.jumps = max(0,self.jumps-1) # lower bound number of jumps at 0
+                return True
+            elif not self.flip and self.last_movement[0] > 0:
+                self.velocity[0] = -6 # push away from the wall
+                self.velocity[1] = -6 # jump vertically
+                self.air_time = 5
+                self.jumps = max(0,self.jumps-1) # lower bound number of jumps at 0
+                return True
+        # normal jumping
+        elif self.jumps: 
+            self.velocity[1] = -8
+            self.jumps -= 1 # take away one of the player's available jumps
+            self.air_time = 5 # this forces the player to enter the jumping animation
+            return True
+        
+        # Returns true when a jump is completed in order to have certain events activate on jumping (if you so desire)

@@ -14,12 +14,25 @@ class Game:
 
         pygame.init()
 
-        
+        # set the window title        
         pygame.display.set_caption('ninja game')
-        self.screen = pygame.display.set_mode((640*2,480*2)) # This is what is shown on the computer screen
 
-        self.display = pygame.Surface((320,240)) # This is the game graphics display
+        # set the screen resolution and game screen size
+        SUPPORTED_RESOLUTIONS = {'960p': [(1280, 960), (320, 240)],
+                                 'HD'  : [(1920,1080), (480, 270)],
+                                 'QHD' : [(2560,1440), (480, 270)],
+                                 'WQHD': [(3440,1440), (720, 270)],
+        } 
+        
+        RESOLUTION = 'WQHD'
 
+        SCREEN_RESOLUTION = SUPPORTED_RESOLUTIONS[RESOLUTION][0]
+        GRAPHICS_DISPLAY_SIZE = SUPPORTED_RESOLUTIONS[RESOLUTION][1]
+
+        self.screen = pygame.display.set_mode(SCREEN_RESOLUTION) # This is what is shown on the computer screen
+        self.display = pygame.Surface(GRAPHICS_DISPLAY_SIZE) # This is the game graphics display
+
+        # Create a clock object to control frame rate
         self.clock = pygame.time.Clock()
 
         # Create a Dictionary containing all the game assets
@@ -81,7 +94,9 @@ class Game:
     def run(self): # This is the game loop
         while True:
 
-            self.display.blit(self.assets['background'],(0,0))
+            self.display.blit(pygame.transform.scale(self.assets['background'],self.display.get_size()),(0,0))
+
+            # self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()),(0,0)) # Render the game graphics onto an up-scaled display
 
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 1
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 1
@@ -122,8 +137,7 @@ class Game:
             
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+                    self.quit()
 
                 # Handle User Inputs
                 if event.type == pygame.KEYDOWN:
@@ -141,6 +155,10 @@ class Game:
                     # Handle Dashing
                     if event.key == pygame.K_x:
                         self.player.dash()
+
+                    # Handle exit via escape key
+                    if event.key == pygame.K_ESCAPE:
+                        self.quit()
                     
 
                 if event.type == pygame.KEYUP:
@@ -154,5 +172,9 @@ class Game:
             pygame.display.update()
             self.clock.tick(60)
 
+    def quit(self):
+        pygame.quit()
+        sys.exit()
+        
 
 Game().run()

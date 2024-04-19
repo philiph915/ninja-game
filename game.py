@@ -37,6 +37,7 @@ class Game:
             'player/slide': Animation(load_images('entities/player/slide')),
             'player/wall_slide': Animation(load_images('entities/player/wall_slide')),
             'particle/leaf': Animation(load_images('particles/leaf'), img_dur = 20, loop=False),
+            'particle/particle': Animation(load_images('particles/particle'), img_dur = 6, loop=False),
         }
 
         self.movement = [False,False]
@@ -101,8 +102,10 @@ class Game:
                     pygame.quit()
                     sys.exit()
 
-                # This input detection logic is similar to axis() in unity
+                # Handle User Inputs
                 if event.type == pygame.KEYDOWN:
+                    
+                    # Horizontal Movement Detection (This input detection logic is similar to axis() in unity)
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                         self.movement[0] = True
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
@@ -111,9 +114,11 @@ class Game:
                     # Handle Jumping (Allows multiple jumps)
                     if (event.key == pygame.K_UP or event.key == pygame.K_w):
                         self.player.jump()
-                        # self.player.velocity[1] = -8
-                        # self.player.jumps -= 1 # take away one of the player's available jumps
-                        # print(self.player.jumps)
+
+                    # Handle Dashing
+                    if event.key == pygame.K_x:
+                        self.player.dash()
+                    
 
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:

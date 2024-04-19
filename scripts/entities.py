@@ -1,4 +1,7 @@
 import pygame
+import math
+import random
+from scripts.particle import Particle
 
 GRAVITY = 0.4
 TERMINAL_VELOCITY = 12
@@ -91,6 +94,11 @@ class Player(PhysicsEntity):
         self.air_time = 0
         self.jumps = 2
         self.wall_slide = False
+        self.dashing = False
+
+    def render(self, surf, offset = (0,0)):
+        if abs(self.dashing) <= 50:
+            super().render(surf,offset)
 
     def update(self, tilemap, movement=(0,0)):
         super().update(tilemap, movement=movement)
@@ -126,6 +134,37 @@ class Player(PhysicsEntity):
         if self.air_time > 4 and self.jumps == 2:
             self.jumps -=1
 
+        # Dashing logic
+        # Generate a burst of particles for the dash at self.dashing == 60 and 50 (start/end of dash)
+        if abs(self.dashing) in {60,50}:
+            for i in range(20): # repeat 20 times
+                angle = random.random() * math.pi * 2 # 0 to 2pi
+                speed = random.random() * 0.5 + 0.5 # 0.5 to 1
+                particle_vel = [math.cos(angle) * speed, math.sin(angle) * speed]
+                # Spawn the particle
+                self.game.particles.append(Particle(self.game,'particle',self.rect().center,velocity=particle_vel,frame=random.randint(0,7))) 
+        
+        # Handle Dashing Movement
+        if self.dashing > 0:
+            self.dashing = max(0,self.dashing - 1)
+        elif self.dashing < 0:
+            self.dashing = min(0,self.dashing + 1)
+        if abs(self.dashing) > 50:
+            # for first 10 frames of a dash, do this
+            self.velocity[0] = abs(self.dashing) / self.dashing * 10
+            if abs(self.dashing) == 51:
+                   self.velocity[0] *= 0.1 # take away 90% of dash velocity after 9 frames (let air drag remove the remaining velocity)
+            # Generate a stream of particles for the duration of the dash
+            particle_vel = [abs(self.dashing)/self.dashing * random.random()*3, 0]
+            self.game.particles.append(Particle(self.game,'particle',self.rect().center,velocity=particle_vel,frame=random.randint(0,7))) 
+
+
+
+        # The remaining 50 frames are for the dash cooldown! (can't dash until self.dashing == 0)
+
+
+
+
         # Add air drag to reduce x-velocity from wall jumps
         if self.velocity[0] > 0:
             self.velocity[0] = max(self.velocity[0] - 0.5, 0) # upper bound at 0
@@ -155,3 +194,10 @@ class Player(PhysicsEntity):
             return True
         
         # Returns true when a jump is completed in order to have certain events activate on jumping (if you so desire)
+
+    def dash(self):
+        if not self.dashing:
+            if self.flip:
+                self.dashing = -60
+            else:
+                self.dashing = 60

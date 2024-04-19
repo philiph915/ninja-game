@@ -11,20 +11,21 @@ class PhysicsEntity:
         self.game = game
         self.type = e_type
         self.pos = list(pos) # ensures position is always a unique class parameter rather than a reference to a list
-        self.size = size
+        self.size = size    # this is used to create the bounding rectangle (these dimensions are relative to anim_offset, which is the origin point)
         self.velocity = [0, 0]
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
         self.last_movement = [0,0]
 
         # Animation properties
         self.action = ''
-        self.anim_offset = (-3, -3)
+        self.anim_offset = (-3, -3) # This is the origin of the object relative to the 0,0 point on the actual sprite image
         self.flip = False
         self.set_action('idle')
 
-    def rect(self): # this function returns the player rectangle
+    def rect(self): # this function returns the entity rectangle
         return pygame.Rect(self.pos[0],self.pos[1],self.size[0], self.size[1])
 
+    # Function for controlling the animation state
     def set_action(self, action):
         if action != self.action: # check if animation action has changed
             self.action = action
@@ -38,12 +39,15 @@ class PhysicsEntity:
         # Determine total movement for this frame
         frame_movement = (movement[0] + self.velocity[0], movement[1] + self.velocity[1])
 
-        # Attempt to move the player along the x-axis
+        # ====== Collision detection ========= # 
+
+        # Attempt to move the entity along the x-axis
         self.pos[0] += frame_movement[0]
         entity_rect = self.rect()
     
         # Check for collisions with tilemap physics objects 
-        for rect in tilemap.physics_rects_around(self.pos):
+        for rect in tilemap.physics_rects_around(self.pos): # loop across neighboring tiles only
+
             # resolve collisions in the x-axis
             if entity_rect.colliderect(rect):
                 if frame_movement[0] > 0:
@@ -54,10 +58,14 @@ class PhysicsEntity:
                     self.collisions['left'] = True
                 self.pos[0] = entity_rect.x
 
-        # Attempt to move the player along the y-axis
+        # Attempt to move the entity along the y-axis
         self.pos[1] += frame_movement[1]
-        entity_rect = self.rect()
-        for rect in tilemap.physics_rects_around(self.pos):
+        entity_rect = self.rect() # get a copy of the entitiy's rectangle
+        
+        # Check for collisions with tilemap physics objects 
+        for rect in tilemap.physics_rects_around(self.pos): # loop across neighboring tiles only
+        
+        # Resolve collisions in the y-axis
             if entity_rect.colliderect(rect):
                 if frame_movement[1] > 0:
                     entity_rect.bottom = rect.top
@@ -88,6 +96,49 @@ class PhysicsEntity:
                   (self.pos[0]-offset[0]+self.anim_offset[0],self.pos[1]-offset[1]+self.anim_offset[1]))
         # surf.blit(self.game.assets['player'],(self.pos[0]-offset[0],self.pos[1]-offset[1]))
 
+# Enemy class
+class Enemy(PhysicsEntity):
+    def __init__(self,game,pos,size):
+        super().__init__(game,'enemy',pos,size)
+
+        self.walking = 0
+        self.flip = False
+
+    def update(self, tilemap, movement = (0,0)):
+        
+        # walking logic
+        if self.walking:
+            my_rect = self.rect() # get this entity's rectangle
+            can_walk = False # initilize as false
+
+            # check if there is still ground underneath and infront of us
+            for rect in tilemap.physics_rects_around(self.pos): # loop across neighboring tiles 
+                print(rect.top)
+                if rect.top >= my_rect.bottom: # if the rect is below us
+                    if (not self.flip and rect.right > my_rect.right) or (self.flip and rect.left < my_rect.left): # and if the rect is in front of us
+                        can_walk = True # then we are allowed to continue walking
+
+            # Turn around if we have collided with a wall or if we are not allowed to continue walking (about to walk off an edge)
+            if self.collisions['left'] or self.collisions['right']:
+                self.flip = not self.flip
+            elif not can_walk:
+                self.flip = not self.flip
+
+            # Apply movement
+            movement = (movement[0] - 0.5 if self.flip else 0.5, movement[1]) # move depending on the direction the enemy is facing
+            self.walking = max(0,self.walking-1) # subtract from the walking timer
+            self.set_action('run')
+        
+        # for each frame that we are not walking, have a random chance to start walking again
+        elif random.random() < 0.01:
+            self.walking = random.randint(30,120) # this is the number of frames we will continue to walk for
+        else:
+            self.set_action('idle')
+    
+        super().update(tilemap, movement = movement)
+
+
+
 class Player(PhysicsEntity):
     def __init__(self, game, pos, size):
         super().__init__(game, 'player', pos, size)
@@ -102,14 +153,17 @@ class Player(PhysicsEntity):
 
     def update(self, tilemap, movement=(0,0)):
         super().update(tilemap, movement=movement)
-        
 
-        # control animation states
+        # Logic for restoring your jump / keeping track of air time
         self.air_time += 1
         if self.collisions['down']:
             self.air_time = 0
             self.jumps = 2 # reset your double jump when you hit the ground
+        # take away your first jump once you've been in the air for a few frames
+        if self.air_time > 4 and self.jumps == 2:
+            self.jumps -=1
 
+        # Wall Sliding Logic
         self.wall_slide = False
         if (self.collisions['right'] or self.collisions['left']) and self.air_time > 4:
             self.wall_slide = True
@@ -122,6 +176,7 @@ class Player(PhysicsEntity):
                 self.flip = True
             self.set_action('wall_slide') # set the animation state
 
+        # Handle Running / Idling / Jumping Animations
         if not self.wall_slide:
             if self.air_time > 1: 
                 self.set_action('jump')
@@ -130,9 +185,6 @@ class Player(PhysicsEntity):
             else:
                 self.set_action('idle')
 
-        # take away your first jump once you've been in the air for a few frames
-        if self.air_time > 4 and self.jumps == 2:
-            self.jumps -=1
 
         # Dashing logic
         # Generate a burst of particles for the dash at self.dashing == 60 and 50 (start/end of dash)
@@ -157,12 +209,7 @@ class Player(PhysicsEntity):
             # Generate a stream of particles for the duration of the dash
             particle_vel = [abs(self.dashing)/self.dashing * random.random()*3, 0]
             self.game.particles.append(Particle(self.game,'particle',self.rect().center,velocity=particle_vel,frame=random.randint(0,7))) 
-
-
-
         # The remaining 50 frames are for the dash cooldown! (can't dash until self.dashing == 0)
-
-
 
 
         # Add air drag to reduce x-velocity from wall jumps

@@ -1,7 +1,7 @@
 import sys
 import random
 import pygame
-from scripts.entities import PhysicsEntity, Player
+from scripts.entities import PhysicsEntity, Player, Enemy
 from scripts.utils import load_image, load_images
 from scripts.tilemap import Tilemap
 from scripts.clouds import Cloud, Clouds
@@ -16,7 +16,7 @@ class Game:
 
         
         pygame.display.set_caption('ninja game')
-        self.screen = pygame.display.set_mode((640,480)) # This is what is shown on the computer screen
+        self.screen = pygame.display.set_mode((640*2,480*2)) # This is what is shown on the computer screen
 
         self.display = pygame.Surface((320,240)) # This is the game graphics display
 
@@ -31,6 +31,8 @@ class Game:
             'player': load_image('entities/player.png'),
             'background': load_image('background.png'),
             'clouds': load_images('clouds'),
+            'enemy/idle': Animation(load_images('entities/enemy/idle'),img_dur = 6),
+            'enemy/run': Animation(load_images('entities/enemy/run'),img_dur = 4),
             'player/idle': Animation(load_images('entities/player/idle'),img_dur = 6),
             'player/run': Animation(load_images('entities/player/run'),img_dur = 4),
             'player/jump': Animation(load_images('entities/player/jump')),
@@ -46,20 +48,34 @@ class Game:
 
         self.tilemap = Tilemap(self, 16)
 
-        # Load a level
+        # Load a tilemap
         self.tilemap.load('map.json')
 
+        # initialize camera position
         self.scroll = [0,0] # create a list representing the camera position
 
+        # create clouds
         self.clouds = Clouds(self.assets['clouds'], count=8)
 
+        # initilize leaf particle spawners
         self.leaf_spawners = []
-
         # Create rectangles representing leaf spawning areas of all the trees
         for tree in self.tilemap.extract([('large_decor',2)], keep=True):
                 self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))
 
+        # initilize list of particles for particle controller
         self.particles = []
+
+        # initialize list of enemies
+        self.enemies = []
+        
+        # Spawn player and enemies by looping over all spawners in the level
+        for spawner in self.tilemap.extract([('spawners',0), ('spawners',1)],keep=False):
+            if spawner['variant'] == 0:
+                self.player.pos = spawner['pos']
+            else:
+                # Spawn enemies
+                self.enemies.append(Enemy(self,spawner['pos'],(8,15)))
 
 
     def run(self): # This is the game loop
@@ -79,11 +95,18 @@ class Game:
                     self.particles.append(Particle(self, 'leaf', pos, velocity = [-0.1, 0.3], frame = random.randint(0,20)))
 
 
+            # Update and render the level / environment
             self.clouds.update() # move the clouds
             self.clouds.render(self.display, offset = render_scroll) # render the clouds
 
             self.tilemap.render(self.display, offset = render_scroll) # render tilemap objects
 
+            # Update and Render the enemies
+            for enemy in self.enemies.copy():
+                enemy.update(self.tilemap, (0,0))
+                enemy.render(self.display, offset = render_scroll)
+
+            # Update and Render the player
             self.player.update(self.tilemap, (2*(self.movement[1] - self.movement[0]),0))
             self.player.render(self.display, offset = render_scroll)
 

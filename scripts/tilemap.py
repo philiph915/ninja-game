@@ -81,7 +81,7 @@ class Tilemap:
                     self.offgrid_tiles.remove(tile)
 
         # Loop through on grid tiles (by dictionary keys)
-        for loc in self.tilemap:
+        for loc in self.tilemap.copy():
             tile = self.tilemap[loc] # tilemap is a dictionary; get the entry corresponding to [loc] (this is the actual dictionary entry, not a working copy!)
             if (tile['type'], tile['variant']) in id_pairs:
 

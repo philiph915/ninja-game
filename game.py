@@ -64,6 +64,22 @@ class Game:
             'projectile': load_image('projectile.png'),
         }
 
+        # Load Sound effects into a dictionary
+        self.sfx = {
+            'jump': pygame.mixer.Sound('data/sfx/jump.wav'),
+            'dash': pygame.mixer.Sound('data/sfx/dash.wav'),
+            'hit': pygame.mixer.Sound('data/sfx/hit.wav'),
+            'shoot': pygame.mixer.Sound('data/sfx/shoot.wav'),
+            'ambience': pygame.mixer.Sound('data/sfx/ambience.wav'),
+        }
+
+        # Apply mixing (best practice is to load sfx audio files too loud then scale down volume in-game)
+        self.sfx['ambience'].set_volume(0.2)
+        self.sfx['shoot'].set_volume(0.4)
+        self.sfx['hit'].set_volume(0.8)
+        self.sfx['dash'].set_volume(0.3)
+        self.sfx['jump'].set_volume(0.7)
+
         self.movement = [False,False]
 
         self.player = Player(self,(50,50),(8,15))
@@ -77,6 +93,13 @@ class Game:
         self.screenshake = 0 # Timer for screen shake effect
 
     def run(self): # This is the game loop
+
+        # Start the music
+        pygame.mixer.music.load('data/music.wav') # note that .wav files are the best for pygame sounds (issues arise with other file types)
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1) # play music on an endless loop
+        self.sfx['ambience'].play(-1)
+
         while True:
             
             # Render the base background
@@ -179,7 +202,8 @@ class Game:
 
                     # Handle Jumping (Allows multiple jumps)
                     if (event.key == pygame.K_UP or event.key == pygame.K_w):
-                        self.player.jump()
+                        if self.player.jump():
+                            self.sfx['jump'].play()
 
                     # Handle Dashing
                     if event.key == pygame.K_x:
@@ -247,7 +271,8 @@ class Game:
                         self.projectiles.remove(projectile)
                         self.dead += 1 # take damage
                         self.screenshake = max(25,self.screenshake) # this prevents a larger screen shake from being overwritten by a smaller one
-
+                        # Play death sound
+                        self.sfx['hit'].play()
                         # Spawn a mess of particles
                         for i in range(30):
                             angle = random.random() * math.pi * 2

@@ -137,13 +137,21 @@ class Enemy(PhysicsEntity):
                 dis = (self.game.player.pos[0] - self.pos[0], self.game.player.pos[1] - self.pos[1])
                 if abs(dis[1] < 16): # if the player is within +/- 1 tile in y
                     if (self.flip and dis[0] < 0): # if the player is to the left of the enemy and the enemy is facing left
+                        # Spawn a projectile (left velocity)
                         self.game.projectiles.append([[self.rect().centerx - 7, self.rect().centery],-5,0])
+                        # Spawn sparks at the end of the gun barrel
                         for i in range(4):
                             self.game.sparks.append(Spark(self.game.projectiles[-1][0], random.random() - 0.5 + math.pi, 2 + random.random() ))
+                        # Play the shooting sound
+                        self.game.sfx['shoot'].play()
                     elif (not self.flip and dis[0] > 0):
+                        # Spawn a projectile (right velocity)
                         self.game.projectiles.append([[self.rect().centerx + 7, self.rect().centery],5,0])
+                        # Spawn sparks at the end of the gun barrel
                         for i in range(4):
                             self.game.sparks.append(Spark(self.game.projectiles[-1][0], random.random() - 0.5, 2 - random.random() ))
+                        # Play the shooting sound
+                        self.game.sfx['shoot'].play()
         
         # for each frame that we are not walking, have a random chance to start walking again
         elif random.random() < 0.01:
@@ -174,6 +182,8 @@ class Enemy(PhysicsEntity):
                     self.game.sparks.append(Spark(self.rect().center, math.pi, 5+random.random()))
                 # Apply screenshake
                 self.game.screenshake = max(25,self.game.screenshake)
+                # Play death sound
+                self.game.sfx['hit'].play()
                 return True
             else:
                 return False
@@ -209,6 +219,8 @@ class Player(PhysicsEntity):
         # Handle logic for death by falling off the map
         if self.air_time > 120:
             self.game.dead += 1
+            # Play death sound
+            self.game.sfx['hit'].play()
             # Apply screen shake
             self.game.screenshake = max(25,self.game.screenshake)
             # Spawn a mess of particles
@@ -311,6 +323,7 @@ class Player(PhysicsEntity):
 
     def dash(self):
         if not self.dashing:
+            self.game.sfx['dash'].play()
             if self.flip:
                 self.dashing = -60
             else:

@@ -95,8 +95,11 @@ class Game:
 
             # Update and Render the enemies
             for enemy in self.enemies.copy():
-                enemy.update(self.tilemap, (0,0))
+                kill = enemy.update(self.tilemap, (0,0))
                 enemy.render(self.display, offset = render_scroll)
+                if kill:
+                    self.enemies.remove(enemy)
+
 
             # Update and Render the player
             self.player.update(self.tilemap, (2*(self.movement[1] - self.movement[0]),0))

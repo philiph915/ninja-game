@@ -25,6 +25,7 @@ class Game:
         } 
         
         RESOLUTION = 'WQHD'
+        # RESOLUTION = '960p'
 
         SCREEN_RESOLUTION = SUPPORTED_RESOLUTIONS[RESOLUTION][0]
         GRAPHICS_DISPLAY_SIZE = SUPPORTED_RESOLUTIONS[RESOLUTION][1]
@@ -53,6 +54,8 @@ class Game:
             'player/wall_slide': Animation(load_images('entities/player/wall_slide')),
             'particle/leaf': Animation(load_images('particles/leaf'), img_dur = 20, loop=False),
             'particle/particle': Animation(load_images('particles/particle'), img_dur = 6, loop=False),
+            'gun': load_image('gun.png'),
+            'projectile': load_image('projectile.png'),
         }
 
         self.movement = [False,False]
@@ -82,6 +85,9 @@ class Game:
         # initialize list of enemies
         self.enemies = []
         
+        # initialize list of projectiles
+        self.projectiles = []
+
         # Spawn player and enemies by looping over all spawners in the level
         for spawner in self.tilemap.extract([('spawners',0), ('spawners',1)],keep=False):
             if spawner['variant'] == 0:
@@ -124,6 +130,30 @@ class Game:
             # Update and Render the player
             self.player.update(self.tilemap, (2*(self.movement[1] - self.movement[0]),0))
             self.player.render(self.display, offset = render_scroll)
+
+            # Update and Render Projectiles
+            # Projectiles is a list of all the projectiles in the game.
+            # Each projectile is a 3-Dimensional list with the following data:
+            # [[x,y], direction, timer]
+            # Based on how Python handles lists, here are some tips:
+            # projectile[0][0] is the x-coordinate
+            # projectile[0][1] is the y-coordinate
+            # projectile[1] is the velocity
+            # projectile[2] is the number of frames that projectile has existed
+            for projectile in self.projectiles.copy():
+                projectile[0][0] += projectile[1]
+                projectile[2] += 1
+                img = self.assets['projectile']
+                self.display.blit(img,(projectile[0][0]-img.get_width() / 2 - render_scroll[0], \
+                                  projectile[0][1] - img.get_height() / 2 - render_scroll[1]))
+                if self.tilemap.solid_check(projectile[0]):
+                    self.projectiles.remove(projectile)
+                elif projectile[2] > 360:
+                    self.projectiles.remove(projectile)
+                elif abs(self.player.dashing) < 50: # if the player is not in a dash
+                    if self.player.rect().collidepoint(projectile[0]):
+                        self.projectiles.remove(projectile)
+
 
             # Update and Render Particles
             for particle in self.particles.copy(): # work with a copy of the particles list because we are removing items!

@@ -88,13 +88,10 @@ class PhysicsEntity:
             self.velocity[0] = 0 # set x-velocity = 0 after collision occurs
 
         self.animation.update()
-        # print(movement)
 
     def render(self,surf,offset):
-        # print(self.flip)
         surf.blit(pygame.transform.flip(self.animation.img(),self.flip,False),\
                   (self.pos[0]-offset[0]+self.anim_offset[0],self.pos[1]-offset[1]+self.anim_offset[1]))
-        # surf.blit(self.game.assets['player'],(self.pos[0]-offset[0],self.pos[1]-offset[1]))
 
 # Enemy class
 class Enemy(PhysicsEntity):
@@ -133,17 +130,38 @@ class Enemy(PhysicsEntity):
             # Apply movement
             movement = (movement[0] - 0.5 if self.flip else 0.5, movement[1]) # move depending on the direction the enemy is facing
             self.walking = max(0,self.walking-1) # subtract from the walking timer
-            self.set_action('run')
+
+            # Shoot a projectile when the walking timer runs out
+            if not self.walking:
+                dis = (self.game.player.pos[0] - self.pos[0], self.game.player.pos[1] - self.pos[1])
+                if abs(dis[1] < 16): # if the player is within +/- 1 tile in y
+                    if (self.flip and dis[0] < 0): # if the player is to the left of the enemy and the enemy is facing left
+                        self.game.projectiles.append([[self.rect().centerx - 7, self.rect().centery],-5,0])
+                    elif (not self.flip and dis[0] > 0):
+                        self.game.projectiles.append([[self.rect().centerx + 7, self.rect().centery],5,0])
         
         # for each frame that we are not walking, have a random chance to start walking again
         elif random.random() < 0.01:
             self.walking = random.randint(30,120) # this is the number of frames we will continue to walk for
+
+        # Handle animations
+        if movement[0] != 0:
+            self.set_action('run')
         else:
             self.set_action('idle')
     
         super().update(tilemap, movement = movement)
 
+    def render(self, surf, offset = (0,0)):
+        super().render(surf, offset=offset)
 
+        # Render a gun on top of the enemy
+        if self.flip:
+            surf.blit(pygame.transform.flip(self.game.assets['gun'],True,False),\
+                      (self.rect().centerx - 4 - self.game.assets['gun'].get_width() - offset[0],self.rect().centery - offset[1]))
+        else:
+            surf.blit(self.game.assets['gun'],(self.rect().centerx + 4 - offset[0], self.rect().centery - offset[1]))
+            
 
 class Player(PhysicsEntity):
     def __init__(self, game, pos, size):

@@ -64,46 +64,15 @@ class Game:
 
         self.tilemap = Tilemap(self, 16)
 
-        # Load a tilemap
-        self.tilemap.load('map.json')
-
-        # initialize camera position
-        self.scroll = [0,0] # create a list representing the camera position
-
-        # create clouds
-        self.clouds = Clouds(self.assets['clouds'], count=8)
-
-        # initilize leaf particle spawners
-        self.leaf_spawners = []
-        # Create rectangles representing leaf spawning areas of all the trees
-        for tree in self.tilemap.extract([('large_decor',2)], keep=True):
-                self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))
-
-        # initilize list of particles for particle controller
-        self.particles = []
-
-        # initialize list of enemies
-        self.enemies = []
-        
-        # initialize list of projectiles
-        self.projectiles = []
-
-        # Spawn player and enemies by looping over all spawners in the level
-        for spawner in self.tilemap.extract([('spawners',0), ('spawners',1)],keep=False):
-            if spawner['variant'] == 0:
-                self.player.pos = spawner['pos']
-            else:
-                # Spawn enemies
-                self.enemies.append(Enemy(self,spawner['pos'],(8,15)))
-
+        self.load_level(0)
 
     def run(self): # This is the game loop
         while True:
-
+            
+            # Render the base background
             self.display.blit(pygame.transform.scale(self.assets['background'],self.display.get_size()),(0,0))
 
-            # self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()),(0,0)) # Render the game graphics onto an up-scaled display
-
+            # Move the Camera
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 1
             self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 1
             render_scroll = (int(self.scroll[0]),int(self.scroll[1])) # integer version of scroll position
@@ -132,28 +101,7 @@ class Game:
             self.player.render(self.display, offset = render_scroll)
 
             # Update and Render Projectiles
-            # Projectiles is a list of all the projectiles in the game.
-            # Each projectile is a 3-Dimensional list with the following data:
-            # [[x,y], direction, timer]
-            # Based on how Python handles lists, here are some tips:
-            # projectile[0][0] is the x-coordinate
-            # projectile[0][1] is the y-coordinate
-            # projectile[1] is the velocity
-            # projectile[2] is the number of frames that projectile has existed
-            for projectile in self.projectiles.copy():
-                projectile[0][0] += projectile[1]
-                projectile[2] += 1
-                img = self.assets['projectile']
-                self.display.blit(img,(projectile[0][0]-img.get_width() / 2 - render_scroll[0], \
-                                  projectile[0][1] - img.get_height() / 2 - render_scroll[1]))
-                if self.tilemap.solid_check(projectile[0]):
-                    self.projectiles.remove(projectile)
-                elif projectile[2] > 360:
-                    self.projectiles.remove(projectile)
-                elif abs(self.player.dashing) < 50: # if the player is not in a dash
-                    if self.player.rect().collidepoint(projectile[0]):
-                        self.projectiles.remove(projectile)
-
+            self.process_projectiles(offset = render_scroll)
 
             # Update and Render Particles
             for particle in self.particles.copy(): # work with a copy of the particles list because we are removing items!
@@ -164,7 +112,6 @@ class Game:
 
                 if kill: self.particles.remove(particle) # remove EOL particles
 
-            
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.quit()
@@ -205,6 +152,64 @@ class Game:
     def quit(self):
         pygame.quit()
         sys.exit()
+
+    def process_projectiles(self,offset=(0,0)):
+        # Update and Render Projectiles
+            # Projectiles is a list of all the projectiles in the game.
+            # Each projectile is a 3-Dimensional list with the following data:
+            # [[x,y], direction, timer]
+            # Based on how Python handles lists, here are some tips:
+            # projectile[0][0] is the x-coordinate
+            # projectile[0][1] is the y-coordinate
+            # projectile[1] is the velocity
+            # projectile[2] is the number of frames that projectile has existed
+            for projectile in self.projectiles.copy():
+                projectile[0][0] += projectile[1]
+                projectile[2] += 1
+                img = self.assets['projectile']
+                self.display.blit(img,(projectile[0][0]-img.get_width() / 2 - offset[0], \
+                                  projectile[0][1] - img.get_height() / 2 - offset[1]))
+                if self.tilemap.solid_check(projectile[0]):
+                    self.projectiles.remove(projectile)
+                elif projectile[2] > 360:
+                    self.projectiles.remove(projectile)
+                elif abs(self.player.dashing) < 50: # if the player is not in a dash
+                    if self.player.rect().collidepoint(projectile[0]):
+                        self.projectiles.remove(projectile)
         
+    def load_level(self,map_id):
+        # Load the tilemap
+        self.tilemap.load('data/maps/' + str(map_id) + '.json')
+
+        # ===== Initilize the Level ===== #
+
+        # create clouds
+        self.clouds = Clouds(self.assets['clouds'], count=8)
+        
+        # initialize camera position
+        self.scroll = [0,0] # create a list representing the camera position
+
+        # initilize leaf particle spawners
+        self.leaf_spawners = []
+        # Create rectangles representing leaf spawning areas of all the trees
+        for tree in self.tilemap.extract([('large_decor',2)], keep=True):
+                self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))
+
+        # initilize list of particles for particle controller
+        self.particles = []
+
+        # initialize list of enemies
+        self.enemies = []
+        
+        # initialize list of projectiles
+        self.projectiles = []
+
+        # Spawn player and enemies by looping over all spawners in the level
+        for spawner in self.tilemap.extract([('spawners',0), ('spawners',1)],keep=False):
+            if spawner['variant'] == 0:
+                self.player.pos = spawner['pos'] # move the player to the starting position
+            else:
+                # Spawn enemies
+                self.enemies.append(Enemy(self,spawner['pos'],(8,15)))
 
 Game().run()

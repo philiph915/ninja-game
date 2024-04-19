@@ -68,11 +68,16 @@ class Game:
 
         self.load_level(0)
 
+        self.screenshake = 0 # Timer for screen shake effect
+
     def run(self): # This is the game loop
         while True:
             
             # Render the base background
             self.display.blit(pygame.transform.scale(self.assets['background'],self.display.get_size()),(0,0))
+
+            # Increment screen shake timer
+            self.screenshake = max(0, self.screenshake - 1)
 
             # Reset back to level 0 if player dies
             if self.dead:
@@ -164,8 +169,11 @@ class Game:
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         self.movement[1] = False
 
+            # Handle screen shake rendering
+            screenshake_offset = (random.random() * self.screenshake - self.screenshake / 2, random.random() * self.screenshake - self.screenshake / 2 )
+
             # self.screen.blit(self.img,self.img_pos)
-            self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()),(0,0)) # Render the game graphics onto an up-scaled display
+            self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()),screenshake_offset) # Render the game graphics onto an up-scaled display
             pygame.display.update()
             self.clock.tick(60)
 
@@ -202,6 +210,7 @@ class Game:
                     if self.player.rect().collidepoint(projectile[0]):
                         self.projectiles.remove(projectile)
                         self.dead += 1 # take damage
+                        self.screenshake = max(25,self.screenshake) # this prevents a larger screen shake from being overwritten by a smaller one
 
                         # Spawn a mess of particles
                         for i in range(30):

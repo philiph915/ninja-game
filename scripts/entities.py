@@ -158,9 +158,10 @@ class Enemy(PhysicsEntity):
         # Get nominal physics update logic
         super().update(tilemap, movement = movement)
 
-        # Handle collisions with player dash attack
+        # Handle Enemy death (collisions with player dash attack)
         if abs(self.game.player.dashing) >= 50:
             if self.rect().colliderect(self.game.player.rect()):
+                # Generate particles
                 for i in range(30):
                     angle = random.random() * math.pi * 2
                     speed = random.random() * 5
@@ -171,6 +172,8 @@ class Enemy(PhysicsEntity):
                                             frame = random.randint(0,7)))
                     self.game.sparks.append(Spark(self.rect().center, 0,       5+random.random()))
                     self.game.sparks.append(Spark(self.rect().center, math.pi, 5+random.random()))
+                # Apply screenshake
+                self.game.screenshake = max(25,self.game.screenshake)
                 return True
             else:
                 return False
@@ -206,6 +209,8 @@ class Player(PhysicsEntity):
         # Handle logic for death by falling off the map
         if self.air_time > 120:
             self.game.dead += 1
+            # Apply screen shake
+            self.game.screenshake = max(25,self.game.screenshake)
             # Spawn a mess of particles
             for i in range(30):
                 angle = random.random() * math.pi * 2

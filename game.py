@@ -191,7 +191,7 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.quit()
 
-                # Handle User Inputs
+            # ===== Handle User Inputs ===== #
                 if event.type == pygame.KEYDOWN:
                     
                     # Horizontal Movement Detection (This input detection logic is similar to axis() in unity)

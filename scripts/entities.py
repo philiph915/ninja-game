@@ -203,6 +203,18 @@ class Player(PhysicsEntity):
     def update(self, tilemap, movement=(0,0)):
         super().update(tilemap, movement=movement)
 
+        # Handle logic for death by falling off the map
+        if self.air_time > 120:
+            self.game.dead += 1
+            # Spawn a mess of particles
+            for i in range(30):
+                angle = random.random() * math.pi * 2
+                speed = random.random() * 5
+                self.game.sparks.append(Spark(self.rect().center,angle, 2 + random.random()))
+                self.game.particles.append(Particle(self.game, 'particle', self.rect().center, \
+                                        velocity=[math.cos(angle+math.pi) * speed * 0.5, \
+                                                    math.sin(angle+math.pi) * speed * 0.5], frame = random.randint(0,7)))
+
         # Logic for restoring your jump / keeping track of air time
         self.air_time += 1
         if self.collisions['down']:
@@ -216,6 +228,7 @@ class Player(PhysicsEntity):
         self.wall_slide = False
         if (self.collisions['right'] or self.collisions['left']) and self.air_time > 4:
             self.wall_slide = True
+            self.air_time = 5
             self.velocity[1] = min(self.velocity[1],0.5) # Saturate the downwards velocity when in a wall-slide state
             
             # Show the correct animation based on which side the wall is relative to the player

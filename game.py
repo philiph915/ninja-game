@@ -26,8 +26,8 @@ class Game:
                                  'orig': [(640, 480),  (320, 240)]
         } 
         
-        RESOLUTION = 'WQHD'
-        # RESOLUTION = '960p'
+        # RESOLUTION = 'WQHD'
+        RESOLUTION = '960p'
 
         SCREEN_RESOLUTION = SUPPORTED_RESOLUTIONS[RESOLUTION][0]
         GRAPHICS_DISPLAY_SIZE = SUPPORTED_RESOLUTIONS[RESOLUTION][1]
@@ -74,9 +74,15 @@ class Game:
             # Render the base background
             self.display.blit(pygame.transform.scale(self.assets['background'],self.display.get_size()),(0,0))
 
+            # Reset back to level 0 if player dies
+            if self.dead:
+                self.dead += 1
+                if self.dead > 120:
+                    self.load_level(0)
+
             # Move the Camera
-            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 1
-            self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 1
+            self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 2
+            self.scroll[1] += (self.player.rect().centery - self.display.get_height() / 2 - self.scroll[1]) / 2
             render_scroll = (int(self.scroll[0]),int(self.scroll[1])) # integer version of scroll position
 
             # Spawn Particles
@@ -101,9 +107,10 @@ class Game:
                     self.enemies.remove(enemy)
 
 
-            # Update and Render the player
-            self.player.update(self.tilemap, (2*(self.movement[1] - self.movement[0]),0))
-            self.player.render(self.display, offset = render_scroll)
+            # Update and Render the player (if they have not died)
+            if not self.dead:
+                self.player.update(self.tilemap, (2*(self.movement[1] - self.movement[0]),0))
+                self.player.render(self.display, offset = render_scroll)
 
             # Update and Render Projectiles
             self.process_projectiles(offset = render_scroll)
@@ -189,9 +196,14 @@ class Game:
                         self.sparks.append(Spark(projectile[0], random.random() - 0.5 + (math.pi if projectile[1]>0 else 0) , 2 + random.random() ))
                 elif projectile[2] > 360:
                     self.projectiles.remove(projectile)
+
+                # Logic for player collision with projectile
                 elif abs(self.player.dashing) < 50: # if the player is not in a dash
                     if self.player.rect().collidepoint(projectile[0]):
                         self.projectiles.remove(projectile)
+                        self.dead += 1 # take damage
+
+                        # Spawn a mess of particles
                         for i in range(30):
                             angle = random.random() * math.pi * 2
                             speed = random.random() * 5
@@ -211,6 +223,9 @@ class Game:
         
         # initialize camera position
         self.scroll = [0,0] # create a list representing the camera position
+
+        # Game Over State
+        self.dead = 0
 
         # initilize leaf particle spawners
         self.leaf_spawners = []
@@ -233,6 +248,7 @@ class Game:
         for spawner in self.tilemap.extract([('spawners',0), ('spawners',1)],keep=False):
             if spawner['variant'] == 0:
                 self.player.pos = spawner['pos'] # move the player to the starting position
+                self.player.air_time = 0
             else:
                 # Spawn enemies
                 self.enemies.append(Enemy(self,spawner['pos'],(8,15)))

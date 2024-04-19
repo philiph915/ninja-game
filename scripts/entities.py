@@ -110,13 +110,19 @@ class Enemy(PhysicsEntity):
         if self.walking:
             my_rect = self.rect() # get this entity's rectangle
             can_walk = False # initilize as false
+            
+            # DaFluffyPotato Logic: More efficient but not as robust (uses hard-coded values)
+            # this can be improved by using anim_offset and size parameters
+            # Check for a solid tile 7 pixels in front and 23 pixels below the enemy's origin point
+            if tilemap.solid_check((self.rect().centerx + (-7 if self.flip else 7), self.rect().centery + 23)):
+                can_walk = True
 
+            # My Logic: Less efficient but robust to any entity size
             # check if there is still ground underneath and infront of us
-            for rect in tilemap.physics_rects_around(self.pos): # loop across neighboring tiles 
-                print(rect.top)
-                if rect.top >= my_rect.bottom: # if the rect is below us
-                    if (not self.flip and rect.right > my_rect.right) or (self.flip and rect.left < my_rect.left): # and if the rect is in front of us
-                        can_walk = True # then we are allowed to continue walking
+            # for rect in tilemap.physics_rects_around(self.pos): # loop across neighboring tiles 
+            #     if rect.top >= my_rect.bottom: # if the rect is below us
+            #         if (not self.flip and rect.right > my_rect.right) or (self.flip and rect.left < my_rect.left): # and if the rect is in front of us
+            #             can_walk = True # then we are allowed to continue walking
 
             # Turn around if we have collided with a wall or if we are not allowed to continue walking (about to walk off an edge)
             if self.collisions['left'] or self.collisions['right']:

@@ -119,6 +119,13 @@ class Tilemap:
                 rects.append(pygame.Rect(tile['pos'][0]*self.tile_size, tile['pos'][1]*self.tile_size,self.tile_size,self.tile_size))
         return rects
     
+    # function to check if a solid physics tile exists at a query point and return said tile
+    def solid_check(self, pos):
+        tile_loc = str(int(pos[0] // self.tile_size)) + ';' + str(int(pos[1] // self.tile_size)) # convert pos to tile coordinates
+        if tile_loc in self.tilemap:
+            if self.tilemap[tile_loc]['type'] in PHYSICS_TILES:
+                return self.tilemap[tile_loc]
+
     # Save Tilemap data
     def save(self, path): 
         f = open(path, 'w') # create file with write access

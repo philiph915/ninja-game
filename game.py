@@ -9,6 +9,7 @@ from scripts.utils import Animation
 from scripts.particle import Particle
 from scripts.spark import Spark
 import math
+import os
 
 class Game:
     def __init__(self):
@@ -66,7 +67,9 @@ class Game:
 
         self.tilemap = Tilemap(self, 16)
 
-        self.load_level(0)
+        # Load the starting level
+        self.level = 0
+        self.load_level(self.level)
 
         self.screenshake = 0 # Timer for screen shake effect
 
@@ -79,11 +82,23 @@ class Game:
             # Increment screen shake timer
             self.screenshake = max(0, self.screenshake - 1)
 
-            # Reset back to level 0 if player dies
+            # Check if all the enemies are gone
+            if not len(self.enemies):
+                self.transition += 1
+                # Load the next level
+                if self.transition > 30:
+                    self.level = min(self.level + 1, len(os.listdir('data/maps'))-1)
+                    self.load_level(self.level)
+            if self.transition < 0:
+                self.transition += 1
+
+            # Restart the level if the player dies
             if self.dead:
                 self.dead += 1
-                if self.dead > 120:
-                    self.load_level(0)
+                if self.dead >= 10:
+                    self.transition = min(30, self.transition + 1) # cap at 30 to prevent level transition from occuring outside of self.dead counter
+                if self.dead > 60:
+                    self.load_level(self.level)
 
             # Move the Camera
             self.scroll[0] += (self.player.rect().centerx - self.display.get_width() / 2 - self.scroll[0]) / 2
@@ -169,6 +184,14 @@ class Game:
                     if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                         self.movement[1] = False
 
+            # Draw a circle for transitions
+            if self.transition:
+                # Note that this draw operation is a bit computationally expensive
+                transition_surf = pygame.Surface(self.display.get_size())
+                pygame.draw.circle(transition_surf, (255, 255, 255), (self.display.get_width()//2, self.display.get_height()//2), (30 - abs(self.transition))*int(self.display.get_width()/30))
+                transition_surf.set_colorkey((255,255,255)) # this makes the color white transparent on this surface
+                self.display.blit(transition_surf,(0,0))
+
             # Handle screen shake rendering
             screenshake_offset = (random.random() * self.screenshake - self.screenshake / 2, random.random() * self.screenshake - self.screenshake / 2 )
 
@@ -236,6 +259,9 @@ class Game:
         # Game Over State
         self.dead = 0
 
+        # Scene transition counter
+        self.transition = -30
+
         # initilize leaf particle spawners
         self.leaf_spawners = []
         # Create rectangles representing leaf spawning areas of all the trees
@@ -258,6 +284,9 @@ class Game:
             if spawner['variant'] == 0:
                 self.player.pos = spawner['pos'] # move the player to the starting position
                 self.player.air_time = 0
+                self.player.dashing = 0
+                self.player.velocity = [0,0]
+                self.player.flip = False
             else:
                 # Spawn enemies
                 self.enemies.append(Enemy(self,spawner['pos'],(8,15)))

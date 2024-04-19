@@ -27,6 +27,8 @@ class Game:
                                  'orig': [(640, 480),  (320, 240)]
         } 
         
+
+        # Initialize the Screen
         # RESOLUTION = 'WQHD'
         RESOLUTION = '960p'
 
@@ -34,7 +36,8 @@ class Game:
         GRAPHICS_DISPLAY_SIZE = SUPPORTED_RESOLUTIONS[RESOLUTION][1]
 
         self.screen = pygame.display.set_mode(SCREEN_RESOLUTION) # This is what is shown on the computer screen
-        self.display = pygame.Surface(GRAPHICS_DISPLAY_SIZE) # This is the game graphics display
+        self.display = pygame.Surface(GRAPHICS_DISPLAY_SIZE, pygame.SRCALPHA) # This is the game graphics display
+        self.display_2 = pygame.Surface(GRAPHICS_DISPLAY_SIZE) # This surface is used to create the "outlines" effect
 
         # Create a clock object to control frame rate
         self.clock = pygame.time.Clock()
@@ -77,7 +80,8 @@ class Game:
         while True:
             
             # Render the base background
-            self.display.blit(pygame.transform.scale(self.assets['background'],self.display.get_size()),(0,0))
+            self.display.fill((0,0,0,0)) # fill display with transparant background
+            self.display_2.blit(pygame.transform.scale(self.assets['background'],self.display.get_size()),(0,0))
 
             # Increment screen shake timer
             self.screenshake = max(0, self.screenshake - 1)
@@ -115,7 +119,7 @@ class Game:
 
             # Update and render the level / environment
             self.clouds.update() # move the clouds
-            self.clouds.render(self.display, offset = render_scroll) # render the clouds
+            self.clouds.render(self.display_2, offset = render_scroll) # render the clouds (render on display_2 to prevent adding the outline)
 
             self.tilemap.render(self.display, offset = render_scroll) # render tilemap objects
 
@@ -135,14 +139,6 @@ class Game:
             # Update and Render Projectiles
             self.process_projectiles(offset = render_scroll)
 
-            # Update and Render Particles
-            for particle in self.particles.copy(): # work with a copy of the particles list because we are removing items!
-                kill = particle.update() # update particle and check if it is EOL
-                particle.render(self.display,offset = render_scroll) # render each particle
-                if particle.type == 'leaf':
-                    particle.pos[0] += math.sin(particle.animation.frame * 0.035) * 0.3 # add some oscillations in x-axis movement
-
-                if kill: self.particles.remove(particle) # remove EOL particles
 
             # Update and render sparks
             for spark in self.sparks.copy():
@@ -151,6 +147,22 @@ class Game:
                 if kill:
                     self.sparks.remove(spark)
 
+            # Render the "outline" effect:
+            # this logic generates a surface with black "sillhouettes" everywhere we rendered graphics onto display
+            display_mask = pygame.mask.from_surface(self.display) # create a mask from the display
+            display_sillhouette = display_mask.to_surface(setcolor=(0,0,0,180), unsetcolor=(0,0,0,0)) # turn the mask into a surface
+
+            for offset in [(1,0), (-1,0), (0,-1), (0,1)]:
+                self.display_2.blit(display_sillhouette,offset) # render the sillhouette onto the game graphics display
+
+            # Update and Render Particles
+            for particle in self.particles.copy(): # work with a copy of the particles list because we are removing items!
+                kill = particle.update() # update particle and check if it is EOL
+                particle.render(self.display,offset = render_scroll) # render each particle
+                if particle.type == 'leaf':
+                    particle.pos[0] += math.sin(particle.animation.frame * 0.035) * 0.3 # add some oscillations in x-axis movement
+
+                if kill: self.particles.remove(particle) # remove EOL particles
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -195,8 +207,9 @@ class Game:
             # Handle screen shake rendering
             screenshake_offset = (random.random() * self.screenshake - self.screenshake / 2, random.random() * self.screenshake - self.screenshake / 2 )
 
-            # self.screen.blit(self.img,self.img_pos)
-            self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()),screenshake_offset) # Render the game graphics onto an up-scaled display
+            # Render the game graphics onto an up-scaled display
+            self.display_2.blit(self.display, (0,0)) # add nominal graphics onto the game display
+            self.screen.blit(pygame.transform.scale(self.display_2, self.screen.get_size()),screenshake_offset)
             pygame.display.update()
             self.clock.tick(60)
 
@@ -229,7 +242,7 @@ class Game:
                     self.projectiles.remove(projectile)
 
                 # Logic for player collision with projectile
-                elif abs(self.player.dashing) < 50: # if the player is not in a dash
+                elif abs(self.player.dashing) < 50 and not self.dead: # if the player is not in a dash or already dead
                     if self.player.rect().collidepoint(projectile[0]):
                         self.projectiles.remove(projectile)
                         self.dead += 1 # take damage

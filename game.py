@@ -7,6 +7,7 @@ from scripts.tilemap import Tilemap
 from scripts.clouds import Cloud, Clouds
 from scripts.utils import Animation
 from scripts.particle import Particle
+from scripts.spark import Spark
 import math
 
 class Game:
@@ -22,6 +23,7 @@ class Game:
                                  'HD'  : [(1920,1080), (480, 270)],
                                  'QHD' : [(2560,1440), (480, 270)],
                                  'WQHD': [(3440,1440), (720, 270)],
+                                 'orig': [(640, 480),  (320, 240)]
         } 
         
         RESOLUTION = 'WQHD'
@@ -112,6 +114,14 @@ class Game:
 
                 if kill: self.particles.remove(particle) # remove EOL particles
 
+            # Update and render sparks
+            for spark in self.sparks.copy():
+                kill = spark.update()
+                spark.render(self.display, offset = render_scroll)
+                if kill:
+                    self.sparks.remove(spark)
+
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.quit()
@@ -171,11 +181,21 @@ class Game:
                                   projectile[0][1] - img.get_height() / 2 - offset[1]))
                 if self.tilemap.solid_check(projectile[0]):
                     self.projectiles.remove(projectile)
+                    # Spawn spark particles upon collision with a wall
+                    for i in range(4):
+                        self.sparks.append(Spark(projectile[0], random.random() - 0.5 + (math.pi if projectile[1]>0 else 0) , 2 + random.random() ))
                 elif projectile[2] > 360:
                     self.projectiles.remove(projectile)
                 elif abs(self.player.dashing) < 50: # if the player is not in a dash
                     if self.player.rect().collidepoint(projectile[0]):
                         self.projectiles.remove(projectile)
+                        for i in range(30):
+                            angle = random.random() * math.pi * 2
+                            speed = random.random() * 5
+                            self.sparks.append(Spark(self.player.rect().center,angle, 2 + random.random()))
+                            self.particles.append(Particle(self, 'particle', self.player.rect().center, \
+                                                   velocity=[math.cos(angle+math.pi) * speed * 0.5, \
+                                                             math.sin(angle+math.pi) * speed * 0.5], frame = random.randint(0,7)))
         
     def load_level(self,map_id):
         # Load the tilemap
@@ -195,14 +215,16 @@ class Game:
         for tree in self.tilemap.extract([('large_decor',2)], keep=True):
                 self.leaf_spawners.append(pygame.Rect(4 + tree['pos'][0], 4 + tree['pos'][1], 23, 13))
 
-        # initilize list of particles for particle controller
+        # initilize list of particles for particle controllers
         self.particles = []
+        self.sparks = []
 
         # initialize list of enemies
         self.enemies = []
         
         # initialize list of projectiles
         self.projectiles = []
+        
 
         # Spawn player and enemies by looping over all spawners in the level
         for spawner in self.tilemap.extract([('spawners',0), ('spawners',1)],keep=False):

@@ -2,6 +2,7 @@ import pygame
 import math
 import random
 from scripts.particle import Particle
+from scripts.spark import Spark
 
 GRAVITY = 0.4
 TERMINAL_VELOCITY = 12
@@ -137,8 +138,12 @@ class Enemy(PhysicsEntity):
                 if abs(dis[1] < 16): # if the player is within +/- 1 tile in y
                     if (self.flip and dis[0] < 0): # if the player is to the left of the enemy and the enemy is facing left
                         self.game.projectiles.append([[self.rect().centerx - 7, self.rect().centery],-5,0])
+                        for i in range(4):
+                            self.game.sparks.append(Spark(self.game.projectiles[-1][0], random.random() - 0.5 + math.pi, 2 + random.random() ))
                     elif (not self.flip and dis[0] > 0):
                         self.game.projectiles.append([[self.rect().centerx + 7, self.rect().centery],5,0])
+                        for i in range(4):
+                            self.game.sparks.append(Spark(self.game.projectiles[-1][0], random.random() - 0.5, 2 - random.random() ))
         
         # for each frame that we are not walking, have a random chance to start walking again
         elif random.random() < 0.01:

@@ -223,7 +223,7 @@ class Game:
                     if event.key == pygame.K_ESCAPE:
                         self.quit()
                     
-
+            # ===== End Input Handling ===== # 
 
             # Draw a circle for transitions
             if self.transition:

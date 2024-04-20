@@ -45,6 +45,7 @@ class Editor:
         self.tile_list = list(self.assets) # calling list() with a dictionary returns a list of the keys
         self.tile_group = 0 # which category of tile are we using
         self.tile_variant = 0  # which member of the tile category are we using
+        self.tile_slope = 0 # slope of current tile
 
         self.ongrid = True
 
@@ -81,7 +82,7 @@ class Editor:
                 elif self.ongrid:
                     # Add an item to the dictionary based on mouse position and current tile selection
                     self.tilemap.tilemap[str(tile_pos[0]) + ';' + str(tile_pos[1])] = {'type': self.tile_list[self.tile_group], \
-                                                                                        'variant': self.tile_variant, 'pos': tile_pos}
+                                                                                        'variant': self.tile_variant, 'pos': tile_pos, 'slope': self.tile_slope}
                     # print(self.tilemap.tilemap)
             # Remove tiles
             if self.right_clicking:
@@ -141,6 +142,13 @@ class Editor:
                         elif event.button == 5: # Mouse wheel down
                             self.tile_variant = (self.tile_variant + 1) % len(self.assets[self.tile_list[self.tile_group]]) 
                         
+                    # check if the current tile is a ramp
+                    self.tile_slope = 0 # default to no slope
+                    if self.tile_list[self.tile_group] == 'grass' or self.tile_list[self.tile_group] == 'stone':
+                        if self.tile_variant == 9 :
+                            self.tile_slope = 1
+                        elif self.tile_variant == 10:
+                            self.tile_slope = -1
 
                 if event.type == pygame.MOUSEBUTTONUP:
                     if event.button == 1:

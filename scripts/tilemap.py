@@ -118,6 +118,13 @@ class Tilemap:
             if tile['type'] in PHYSICS_TILES:
                 rects.append(pygame.Rect(tile['pos'][0]*self.tile_size, tile['pos'][1]*self.tile_size,self.tile_size,self.tile_size))
         return rects
+
+    def slopes_around(self,pos):
+        slopes = []
+        for tile in self.tiles_around(pos):
+            if tile['type'] in PHYSICS_TILES:
+                slopes.append(tile['slope'])
+        return slopes
     
     # function to check if a solid physics tile exists at a query point and return said tile
     def solid_check(self, pos):

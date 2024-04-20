@@ -88,7 +88,8 @@ class Game:
 
         # Load the starting level
         self.level = 0
-        self.load_level(self.level)
+        # self.load_level(self.level)
+        self.load_level()
 
         self.screenshake = 0 # Timer for screen shake effect
 
@@ -282,7 +283,7 @@ class Game:
                                                    velocity=[math.cos(angle+math.pi) * speed * 0.5, \
                                                              math.sin(angle+math.pi) * speed * 0.5], frame = random.randint(0,7)))
         
-    def load_level(self,map_id):
+    def load_level(self,map_id='../../map'):
         # Load the tilemap
         self.tilemap.load('data/maps/' + str(map_id) + '.json')
 

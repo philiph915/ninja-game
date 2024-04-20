@@ -41,41 +41,69 @@ class PhysicsEntity:
         frame_movement = (movement[0] + self.velocity[0], movement[1] + self.velocity[1])
 
         # ====== Collision detection ========= # 
+        rects = tilemap.physics_rects_around(self.pos) # Check for collisions with tilemap physics objects 
+        slopes = tilemap.slopes_around(self.pos)
+
+        # Attempt to move the entity along the y-axis
+        self.pos[1] += frame_movement[1]
+        entity_rect = self.rect() # get a copy of the entitiy's rectangle
+
+         # loop across neighboring tiles only
+        for i in range(len(rects)):
+            rect = rects[i]
+            slope = slopes[i]
+        
+            # Resolve collisions in the y-axis
+            if entity_rect.colliderect(rect):
+                if not slope:
+                    if frame_movement[1] > 0:
+                        entity_rect.bottom = rect.top
+                        self.collisions['down'] = True
+                    if frame_movement[1] < 0:
+                        entity_rect.top = rect.bottom
+                        self.collisions['up'] = True
+                    self.pos[1] = entity_rect.y
+                else:
+                    if slope > 0:
+                        delx = entity_rect.right - rect.left # delx is measured from the ramp to the contacting corner of the entity rect
+                    else:
+                        delx = entity_rect.left - rect.left
+                    dely = entity_rect.bottom - rect.top # this will always be positive
+                    targety = abs(delx*slope) # targety is the y distance from the start of the ramp to the desired y location given x relative to start (left side) of the ramp
+
+                    # if we are intersecting the ramp in y, place the entity on top of the ramp
+                    if slope > 0 and dely > (rect.height - targety):
+                        entity_rect.bottom = rect.bottom - targety
+                        self.collisions['down'] = True
+                        self.pos[1] = entity_rect.y
+                    elif slope < 0 and dely > targety:
+                        entity_rect.bottom = rect.top + targety
+                        self.collisions['down'] = True
+                        self.pos[1] = entity_rect.y
 
         # Attempt to move the entity along the x-axis
         self.pos[0] += frame_movement[0]
         entity_rect = self.rect()
     
-        # Check for collisions with tilemap physics objects 
-        for rect in tilemap.physics_rects_around(self.pos): # loop across neighboring tiles only
+         # loop across neighboring tiles only
+        for i in range(len(rects)):
+            rect = rects[i]
+            slope = slopes[i]
 
             # resolve collisions in the x-axis
             if entity_rect.colliderect(rect):
-                if frame_movement[0] > 0:
-                    entity_rect.right = rect.left
-                    self.collisions['right'] = True
-                if frame_movement[0] < 0:
-                    entity_rect.left = rect.right
-                    self.collisions['left'] = True
-                self.pos[0] = entity_rect.x
+                if not slope:
+                    if frame_movement[0] > 0:
+                        entity_rect.right = rect.left
+                        self.collisions['right'] = True
+                    if frame_movement[0] < 0:
+                        entity_rect.left = rect.right
+                        self.collisions['left'] = True
+                    self.pos[0] = entity_rect.x
 
-        # Attempt to move the entity along the y-axis
-        self.pos[1] += frame_movement[1]
-        entity_rect = self.rect() # get a copy of the entitiy's rectangle
-        
-        # Check for collisions with tilemap physics objects 
-        for rect in tilemap.physics_rects_around(self.pos): # loop across neighboring tiles only
-        
-        # Resolve collisions in the y-axis
-            if entity_rect.colliderect(rect):
-                if frame_movement[1] > 0:
-                    entity_rect.bottom = rect.top
-                    self.collisions['down'] = True
-                if frame_movement[1] < 0:
-                    entity_rect.top = rect.bottom
-                    self.collisions['up'] = True
-                self.pos[1] = entity_rect.y
+        # ===== End Collision Detection ===== #
 
+        # Sprite Flipping Logic
         if movement[0] > 0:
             self.flip = False
         if movement[0] < 0: 
@@ -263,7 +291,6 @@ class Player(PhysicsEntity):
                 self.set_action('run')
             else:
                 self.set_action('idle')
-
 
         # Dashing logic
         # Generate a burst of particles for the dash at self.dashing == 60 and 50 (start/end of dash)

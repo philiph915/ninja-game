@@ -157,7 +157,7 @@ class Game:
 
             # Update and Render the player (if they have not died)
             if not self.dead:
-                self.player.update(self.tilemap, (2*(self.movement[1] - self.movement[0]),0))
+                self.player.update(self.tilemap, (self.player.walk_speed*(self.movement[1] - self.movement[0]),0)) # move the player
                 self.player.render(self.display, offset = render_scroll)
 
             # Update and Render Projectiles
@@ -193,6 +193,13 @@ class Game:
                     self.quit()
 
             # ===== Handle User Inputs ===== #
+                if event.type == pygame.KEYUP:
+                    if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                        self.movement[0] = False
+
+                    if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                        self.movement[1] = False
+
                 if event.type == pygame.KEYDOWN:
                     
                     # Horizontal Movement Detection (This input detection logic is similar to axis() in unity)
@@ -215,11 +222,6 @@ class Game:
                         self.quit()
                     
 
-                if event.type == pygame.KEYUP:
-                    if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                        self.movement[0] = False
-                    if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                        self.movement[1] = False
 
             # Draw a circle for transitions
             if self.transition:

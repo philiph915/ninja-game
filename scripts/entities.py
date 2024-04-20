@@ -16,6 +16,8 @@ class PhysicsEntity:
         self.velocity = [0, 0]
         self.collisions = {'up': False, 'down': False, 'left': False, 'right': False}
         self.last_movement = [0,0]
+        self.last_collisions = self.collisions.copy()
+        self.air_time = 0
 
         # Animation properties
         self.action = ''
@@ -40,6 +42,11 @@ class PhysicsEntity:
         # Determine total movement for this frame
         frame_movement = (movement[0] + self.velocity[0], movement[1] + self.velocity[1])
 
+        # force some downwards movement to help going down ramps
+        if self.last_collisions['down']:
+            pass
+            # frame_movement = (frame_movement[0], frame_movement[1] + 5 )
+
         # ====== Collision detection ========= # 
         rects = tilemap.physics_rects_around(self.pos) # Check for collisions with tilemap physics objects 
         slopes = tilemap.slopes_around(self.pos)
@@ -55,6 +62,8 @@ class PhysicsEntity:
         
             # Resolve collisions in the y-axis
             if entity_rect.colliderect(rect):
+                # if self.type == 'player':
+                    # pygame.draw.rect(self.game.display,(255,0,0),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
                 if not slope:
                     if frame_movement[1] > 0:
                         entity_rect.bottom = rect.top
@@ -72,7 +81,7 @@ class PhysicsEntity:
                     targety = abs(delx*slope) # targety is the y distance from the start of the ramp to the desired y location given x relative to start (left side) of the ramp
 
                     # if we are intersecting the ramp in y, place the entity on top of the ramp
-                    if slope > 0 and dely > (rect.height - targety):
+                    if (slope > 0 and dely > (rect.height - targety)):
                         entity_rect.bottom = rect.bottom - targety
                         self.collisions['down'] = True
                         self.pos[1] = entity_rect.y
@@ -80,6 +89,17 @@ class PhysicsEntity:
                         entity_rect.bottom = rect.top + targety
                         self.collisions['down'] = True
                         self.pos[1] = entity_rect.y
+                    
+                    # Stick to the ground when running down slopes
+                    if (slope > 0 and dely > 0 and movement[0] < 0 and self.air_time < 4 and self.velocity[1] >= 0 ):
+                        entity_rect.bottom = rect.bottom - targety - movement[0]*slope
+                        self.pos[1] = entity_rect.y
+                        self.collisions['down'] = True
+
+                    if (slope < 0 and dely > 0 and movement[0] > 0 and self.air_time < 4 and self.velocity[1] >= 0 ):
+                        entity_rect.bottom = rect.top + targety - movement[0]*slope
+                        self.pos[1] = entity_rect.y
+                        self.collisions['down'] = True
 
         # Attempt to move the entity along the x-axis
         self.pos[0] += frame_movement[0]
@@ -101,7 +121,13 @@ class PhysicsEntity:
                         self.collisions['left'] = True
                     self.pos[0] = entity_rect.x
 
+        self.last_collisions = self.collisions.copy()
         # ===== End Collision Detection ===== #
+
+        # Keep track of air time
+        self.air_time += 1
+        if self.collisions['down']:
+            self.air_time = 0
 
         # Sprite Flipping Logic
         if movement[0] > 0:
@@ -236,6 +262,7 @@ class Player(PhysicsEntity):
         self.jumps = 2
         self.wall_slide = False
         self.dashing = False
+        self.walk_speed = 2
 
     def render(self, surf, offset = (0,0)):
         if abs(self.dashing) <= 50:
@@ -261,9 +288,9 @@ class Player(PhysicsEntity):
                                                     math.sin(angle+math.pi) * speed * 0.5], frame = random.randint(0,7)))
 
         # Logic for restoring your jump / keeping track of air time
-        self.air_time += 1
+        # self.air_time += 1
         if self.collisions['down']:
-            self.air_time = 0
+            # self.air_time = 0
             self.jumps = 2 # reset your double jump when you hit the ground
         # take away your first jump once you've been in the air for a few frames
         if self.air_time > 4 and self.jumps == 2:

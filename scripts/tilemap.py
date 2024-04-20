@@ -156,6 +156,9 @@ class Tilemap:
         # loop through all the keys in the tilemap dictionary
         for loc in self.tilemap:
             tile = self.tilemap[loc]
+            # Do not apply autotiling to slopes
+            if tile['slope']: 
+                continue
             neighbors = set()
             for shift in [(1,0),(-1,0),(0,-1),(0,1)]:
                 # build a string representation of the location we want to check

@@ -188,6 +188,11 @@ class Editor:
                     if event.key == pygame.K_t: 
                         self.tilemap.autotile()
 
+                    # Handle exit via escape key
+                    if event.key == pygame.K_ESCAPE:
+                        pygame.quit()
+                        sys.exit()
+
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                         self.movement[0] = False

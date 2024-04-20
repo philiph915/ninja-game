@@ -167,7 +167,7 @@ class Tilemap:
         for loc in self.tilemap:
             tile = self.tilemap[loc]
             # Do not apply autotiling to slopes
-            if tile['slope']: 
+            if tile['variant'] >= 9: 
                 continue
             neighbors = set()
             for shift in [(1,0),(-1,0),(0,-1),(0,1)]:

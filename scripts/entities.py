@@ -42,10 +42,27 @@ class PhysicsEntity:
         # Determine total movement for this frame
         frame_movement = (movement[0] + self.velocity[0], movement[1] + self.velocity[1])
 
-        # force some downwards movement to help going down ramps
-        if self.last_collisions['down']:
-            pass
-            # frame_movement = (frame_movement[0], frame_movement[1] + 5 )
+        # Detect if we are on or near a slope
+        is_near_slope = False
+        entity_rect = self.rect() # get a copy of the entitiy's rectangle
+        slope_query = tilemap.slope_check([entity_rect.bottomleft[0]-1,entity_rect.bottomleft[1]+1]) # test near the bottom left of the entity rect
+        if slope_query:
+            is_near_slope = True
+            if self.game.draw_debug and self.type == 'player':
+                rect = slope_query[0]
+                pygame.draw.rect(self.game.display,(255,0,0),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
+        else: 
+            slope_query = tilemap.slope_check([entity_rect.bottomright[0]+1,entity_rect.bottomright[1]+1])  # test near the bottom right of the entity rect
+            if slope_query:
+                is_near_slope = True
+                if self.game.draw_debug and self.type == 'player':
+                    rect = slope_query[0]
+                    pygame.draw.rect(self.game.display,(255,0,0),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
+
+        # Force some downwards movement if we are moving down a slope
+        if is_near_slope and self.air_time < 3 and self.velocity[1] >= 0:
+             # this takes the angle of the slope tile into account when moving us down the slope
+            frame_movement = (frame_movement[0], frame_movement[1]+abs(frame_movement[0]*slope_query[1]))
 
         # ====== Collision detection ========= # 
         rects = tilemap.physics_rects_around(self.pos) # Check for collisions with tilemap physics objects 
@@ -59,11 +76,13 @@ class PhysicsEntity:
         for i in range(len(rects)):
             rect = rects[i]
             slope = slopes[i]
+            if 0 and self.game.draw_debug and self.type == 'player':
+                pygame.draw.rect(self.game.display,(255,0,0),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
         
             # Resolve collisions in the y-axis
             if entity_rect.colliderect(rect):
-                # if self.type == 'player':
-                    # pygame.draw.rect(self.game.display,(255,0,0),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
+                if 0 and self.game.draw_debug and self.type == 'player':
+                    pygame.draw.rect(self.game.display,(0,0,255),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
                 if not slope:
                     if frame_movement[1] > 0:
                         entity_rect.bottom = rect.top
@@ -80,6 +99,7 @@ class PhysicsEntity:
                     dely = entity_rect.bottom - rect.top # this will always be positive
                     targety = abs(delx*slope) # targety is the y distance from the start of the ramp to the desired y location given x relative to start (left side) of the ramp
 
+                    # stick to the ground when running up slopes
                     # if we are intersecting the ramp in y, place the entity on top of the ramp
                     if (slope > 0 and dely > (rect.height - targety)):
                         entity_rect.bottom = rect.bottom - targety
@@ -89,17 +109,6 @@ class PhysicsEntity:
                         entity_rect.bottom = rect.top + targety
                         self.collisions['down'] = True
                         self.pos[1] = entity_rect.y
-                    
-                    # Stick to the ground when running down slopes
-                    if (slope > 0 and dely > 0 and movement[0] < 0 and self.air_time < 4 and self.velocity[1] >= 0 ):
-                        entity_rect.bottom = rect.bottom - targety - movement[0]*slope
-                        self.pos[1] = entity_rect.y
-                        self.collisions['down'] = True
-
-                    if (slope < 0 and dely > 0 and movement[0] > 0 and self.air_time < 4 and self.velocity[1] >= 0 ):
-                        entity_rect.bottom = rect.top + targety - movement[0]*slope
-                        self.pos[1] = entity_rect.y
-                        self.collisions['down'] = True
 
         # Attempt to move the entity along the x-axis
         self.pos[0] += frame_movement[0]
@@ -121,7 +130,7 @@ class PhysicsEntity:
                         self.collisions['left'] = True
                     self.pos[0] = entity_rect.x
 
-        self.last_collisions = self.collisions.copy()
+        # self.last_collisions = self.collisions.copy()
         # ===== End Collision Detection ===== #
 
         # Keep track of air time
@@ -312,7 +321,7 @@ class Player(PhysicsEntity):
 
         # Handle Running / Idling / Jumping Animations
         if not self.wall_slide:
-            if self.air_time > 1: 
+            if self.air_time > 4: 
                 self.set_action('jump')
             elif movement[0] != 0 and not (self.collisions['left'] or self.collisions['right']):
                 self.set_action('run')

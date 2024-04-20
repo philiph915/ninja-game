@@ -86,6 +86,8 @@ class Game:
 
         self.tilemap = Tilemap(self, 16)
 
+        self.draw_debug = False 
+
         # Load the starting level
         self.level = 0
         # self.load_level(self.level)

@@ -132,6 +132,16 @@ class Tilemap:
         if tile_loc in self.tilemap:
             if self.tilemap[tile_loc]['type'] in PHYSICS_TILES:
                 return self.tilemap[tile_loc]
+            
+    # Function to check if there is a slope at a query point, and return a list containing: [slope bounding rectangle, slope "angle"]
+    def slope_check(self, pos):
+        slope = [[],[]]
+        tile_loc = str(int(pos[0] // self.tile_size)) + ';' + str(int(pos[1] // self.tile_size)) # convert pos to tile coordinates
+        if tile_loc in self.tilemap:
+            if self.tilemap[tile_loc]['type'] in PHYSICS_TILES and self.tilemap[tile_loc]['slope']:
+                slope[0] = pygame.Rect(self.tilemap[tile_loc]['pos'][0]*self.tile_size, self.tilemap[tile_loc]['pos'][1]*self.tile_size,self.tile_size,self.tile_size)
+                slope[1] = self.tilemap[tile_loc]['slope']
+                return slope
 
     # Save Tilemap data
     def save(self, path): 

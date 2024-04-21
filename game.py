@@ -91,7 +91,7 @@ class Game:
         # Load the starting level
         self.level = 0
         # self.load_level(self.level)
-        self.load_level()
+        self.load_level(self.level)
 
         self.screenshake = 0 # Timer for screen shake effect
 

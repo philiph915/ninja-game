@@ -203,12 +203,13 @@ class Game:
                         self.movement[1] = False
 
                 if event.type == pygame.KEYDOWN:
-                    
+                               
                     # Horizontal Movement Detection (This input detection logic is similar to axis() in unity)
-                    if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                        self.movement[0] = True
-                    if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                        self.movement[1] = True
+                    if self.player.dashing < 50: # do not take horizontal movement input during a dash
+                        if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                            self.movement[0] = True
+                        if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                            self.movement[1] = True
 
                     # Handle Jumping (Allows multiple jumps)
                     if (event.key == pygame.K_UP or event.key == pygame.K_w):

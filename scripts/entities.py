@@ -62,76 +62,83 @@ class PhysicsEntity:
 
         # Force some downwards movement if we are moving down a slope
         if is_near_slope and self.air_time < 3 and self.velocity[1] >= 0:
-             # this takes the angle of the slope tile into account when moving us down the slope
-            frame_movement = (frame_movement[0], frame_movement[1]+abs(frame_movement[0]*slope_query[1]))
+             # Ensure we are moving down a slope
+             if (slope_query[1] < 0 and frame_movement[0] > 0) or (slope_query[1] > 0 and frame_movement[0] < 0): 
+                # this takes the angle of the slope tile into account when moving us down the slope
+                frame_movement = (frame_movement[0], frame_movement[1]+abs(frame_movement[0]*slope_query[1]))
 
         # ====== Collision detection ========= # 
-        rects = tilemap.physics_rects_around(self.pos) # Check for collisions with tilemap physics objects 
-        slopes = tilemap.slopes_around(self.pos)
+        rects = tilemap.flat_physics_rects_around(self.pos) # Check for collisions with tilemap physics objects 
+        slopes = tilemap.slope_physics_rects_around(self.pos)
+
+        # Handle collisions with flat tiles
 
         # Attempt to move the entity along the y-axis
         self.pos[1] += frame_movement[1]
         entity_rect = self.rect() # get a copy of the entitiy's rectangle
 
-         # loop across neighboring tiles only
-        for i in range(len(rects)):
-            rect = rects[i]
-            slope = slopes[i]
+        # loop across neighboring flat tiles
+        for rect in rects:
             if 0 and self.game.draw_debug and self.type == 'player':
                 pygame.draw.rect(self.game.display,(255,0,0),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
-        
+
             # Resolve collisions in the y-axis
             if entity_rect.colliderect(rect):
+                # Draw debug graphics
                 if 0 and self.game.draw_debug and self.type == 'player':
                     pygame.draw.rect(self.game.display,(0,0,255),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
-                if not slope:
-                    if frame_movement[1] > 0:
-                        entity_rect.bottom = rect.top
-                        self.collisions['down'] = True
-                    if frame_movement[1] < 0:
-                        entity_rect.top = rect.bottom
-                        self.collisions['up'] = True
-                    self.pos[1] = entity_rect.y
-                else:
-                    if slope > 0:
-                        delx = entity_rect.right - rect.left # delx is measured from the ramp to the contacting corner of the entity rect
-                    else:
-                        delx = entity_rect.left - rect.left
-                    dely = entity_rect.bottom - rect.top # this will always be positive
-                    targety = abs(delx*slope) # targety is the y distance from the start of the ramp to the desired y location given x relative to start (left side) of the ramp
 
-                    # stick to the ground when running up slopes
-                    # if we are intersecting the ramp in y, place the entity on top of the ramp
-                    if (slope > 0 and dely > (rect.height - targety)):
-                        entity_rect.bottom = rect.bottom - targety
-                        self.collisions['down'] = True
-                        self.pos[1] = entity_rect.y
-                    elif slope < 0 and dely > targety:
-                        entity_rect.bottom = rect.top + targety
-                        self.collisions['down'] = True
-                        self.pos[1] = entity_rect.y
+                if frame_movement[1] > 0:
+                    entity_rect.bottom = rect.top
+                    self.collisions['down'] = True
+                if frame_movement[1] < 0:
+                    entity_rect.top = rect.bottom
+                    self.collisions['up'] = True
+                self.pos[1] = entity_rect.y
 
         # Attempt to move the entity along the x-axis
         self.pos[0] += frame_movement[0]
         entity_rect = self.rect()
     
-         # loop across neighboring tiles only
-        for i in range(len(rects)):
-            rect = rects[i]
-            slope = slopes[i]
-
+        # loop across neighboring flat tiles
+        for rect in rects:
             # resolve collisions in the x-axis
             if entity_rect.colliderect(rect):
-                if not slope:
-                    if frame_movement[0] > 0:
-                        entity_rect.right = rect.left
-                        self.collisions['right'] = True
-                    if frame_movement[0] < 0:
-                        entity_rect.left = rect.right
-                        self.collisions['left'] = True
-                    self.pos[0] = entity_rect.x
+                if frame_movement[0] > 0:
+                    entity_rect.right = rect.left
+                    self.collisions['right'] = True
+                if frame_movement[0] < 0:
+                    entity_rect.left = rect.right
+                    self.collisions['left'] = True
+                self.pos[0] = entity_rect.x
 
-        # self.last_collisions = self.collisions.copy()
+
+        # Slope Checking (resolves y-axis)
+        entity_rect = self.rect()
+        slope = 0
+        for rect in slopes:
+            if entity_rect.colliderect(rect):
+                # Get the slope "angle"
+                slope = tilemap.slope_check(rect.center)[1]
+                # Calculate delx differently based on if it is an upwards or downwards slope
+                if slope > 0:
+                    delx = entity_rect.right - rect.left # delx is measured from the ramp to the contacting corner of the entity rect
+                else:
+                    delx = entity_rect.left - rect.left
+                dely = entity_rect.bottom - rect.top # this will always be positive
+                targety = abs(delx*slope) # targety is the y distance from the start of the ramp to the desired y location given x relative to start (left side) of the ramp
+
+                # stick to the ground when running up slopes
+                # if we are intersecting the ramp in y, place the entity on top of the ramp
+                if (slope > 0 and dely > (rect.height - targety)):
+                    entity_rect.bottom = rect.bottom - targety
+                    self.collisions['down'] = True
+                    self.pos[1] = entity_rect.y
+                elif slope < 0 and dely > targety:
+                    entity_rect.bottom = rect.top + targety
+                    self.collisions['down'] = True
+                    self.pos[1] = entity_rect.y
+
         # ===== End Collision Detection ===== #
 
         # Keep track of air time

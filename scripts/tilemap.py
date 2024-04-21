@@ -111,20 +111,29 @@ class Tilemap:
                 tiles.append(self.tilemap[check_loc])
         return tiles
     
-    # filter tiles that have physics enabled
+    # return neighboring tiles that have physics enabled
     def physics_rects_around(self, pos):
         rects = []
         for tile in self.tiles_around(pos):
             if tile['type'] in PHYSICS_TILES:
                 rects.append(pygame.Rect(tile['pos'][0]*self.tile_size, tile['pos'][1]*self.tile_size,self.tile_size,self.tile_size))
         return rects
-
-    def slopes_around(self,pos):
-        slopes = []
+    
+    # return neighboring *flat* tiles that have physics enabled
+    def flat_physics_rects_around(self, pos):
+        rects = []
         for tile in self.tiles_around(pos):
-            if tile['type'] in PHYSICS_TILES:
-                slopes.append(tile['slope'])
-        return slopes
+            if tile['type'] in PHYSICS_TILES and tile['slope'] == 0:
+                rects.append(pygame.Rect(tile['pos'][0]*self.tile_size, tile['pos'][1]*self.tile_size,self.tile_size,self.tile_size))
+        return rects
+    
+    # Function to return nearby slopes' bounding rectangles
+    def slope_physics_rects_around(self, pos):
+        rects = []
+        for tile in self.tiles_around(pos):
+            if tile['type'] in PHYSICS_TILES and tile['slope']:
+                rects.append(pygame.Rect(tile['pos'][0]*self.tile_size, tile['pos'][1]*self.tile_size,self.tile_size,self.tile_size))
+        return rects
     
     # function to check if a solid physics tile exists at a query point and return said tile
     def solid_check(self, pos):

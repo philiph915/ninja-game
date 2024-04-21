@@ -44,20 +44,21 @@ class PhysicsEntity:
 
         # Detect if we are on or near a slope
         is_near_slope = False
-        entity_rect = self.rect() # get a copy of the entitiy's rectangle
-        slope_query = tilemap.slope_check([entity_rect.bottomleft[0]-1,entity_rect.bottomleft[1]+1]) # test near the bottom left of the entity rect
-        if slope_query:
-            is_near_slope = True
-            if self.game.draw_debug and self.type == 'player':
-                rect = slope_query[0]
-                pygame.draw.rect(self.game.display,(255,0,0),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
-        else: 
-            slope_query = tilemap.slope_check([entity_rect.bottomright[0]+1,entity_rect.bottomright[1]+1])  # test near the bottom right of the entity rect
+        if self.air_time < 3:
+            entity_rect = self.rect() # get a copy of the entitiy's rectangle
+            slope_query = tilemap.slope_check([entity_rect.bottomleft[0]-1,entity_rect.bottomleft[1]+1]) # test near the bottom left of the entity rect
             if slope_query:
                 is_near_slope = True
                 if self.game.draw_debug and self.type == 'player':
                     rect = slope_query[0]
                     pygame.draw.rect(self.game.display,(255,0,0),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
+            else: 
+                slope_query = tilemap.slope_check([entity_rect.bottomright[0]+1,entity_rect.bottomright[1]+1])  # test near the bottom right of the entity rect
+                if slope_query:
+                    is_near_slope = True
+                    if self.game.draw_debug and self.type == 'player':
+                        rect = slope_query[0]
+                        pygame.draw.rect(self.game.display,(255,0,0),pygame.Rect(rect.left-self.game.scroll[0] ,rect.top-self.game.scroll[1],rect.width,rect.height))
 
         # Force some downwards movement if we are moving down a slope
         if is_near_slope and self.air_time < 3 and self.velocity[1] >= 0:
